@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    /* Slate 950 */
+    --foreground: 210 40% 98%;
+    /* Slate 50 */
+
+    --card: 222.2 84% 4.9%;
+    /* Slate 950 */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 36 100% 50%;
+    /* Amber 500 - Gold Accent */
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    /* Slate 800 */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 36 100% 50%;
+    /* Gold Ring */
+
+    --radius: 0rem;
+    /* Sharp Corners */
+
+    /* Charts can stick to the same palette */
+    --chart-1: 36 100% 50%;
+    --chart-2: 210 40% 98%;
+    --chart-3: 217.2 32.6% 17.5%;
+    --chart-4: 215 20.2% 65.1%;
+    --chart-5: 0 62.8% 30.6%;
+  }
+
+  .dark {
+    /* Same as root because we are forcing dark mode mostly */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 36 100% 50%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 36 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .bg-grid-white {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+}
+
+/* RTL Support */
+.rtl {
+  direction: rtl;
+}
+
+
+.rtl .space-x-2> :not([hidden])~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(0.5rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.rtl .space-x-4> :not([hidden])~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(1rem * var(--tw-space-x-reverse));
+  margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+/* Arabic font support */
+[lang="ar"] {
+  font-family: "Segoe UI", "Tahoma", "Arial", sans-serif;
+}
+
+/* RTL text alignment */
+.rtl .text-left {
+  text-align: right;
+}
+
+.rtl .text-right {
+  text-align: left;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .bg-slate-950,
+  .bg-slate-900,
+  .bg-slate-800 {
+    background-color: transparent !important;
+    border-color: #eee !important;
+  }
+
+  .text-white,
+  .text-slate-300,
+  .text-slate-400,
+  .text-slate-500 {
+    color: black !important;
+  }
+
+  .text-emerald-500,
+  .text-amber-500 {
+    color: black !important;
+    font-weight: bold;
+  }
+
+  .border {
+    border-color: #000 !important;
+  }
+
+  .shadow-2xl,
+  .shadow-xl,
+  .shadow-md {
+    shadow: none !important;
+  }
+
+  /* Remove scrollbars and dialog overlays in print */
+  [role="dialog"] {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+}
