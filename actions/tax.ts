@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { salesInvoices, purchaseInvoices, payroll, hrEmployees } from "@/db/schema"
+import { salesInvoices, purchaseInvoices, payrollRunDetails as payroll, employees } from "@/db/schema"
 import { eq, and, sql, gte, lte } from "drizzle-orm"
 
 export async function getTaxSummary(companyId: number, startDate?: string, endDate?: string) {

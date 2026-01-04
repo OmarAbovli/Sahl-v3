@@ -75,6 +75,7 @@ export async function getSession(): Promise<User | null> {
 }
 
 export const getCurrentUser = getSession
+export const getSessionUser = getSession
 
 export async function destroySession() {
   const cookieStore = await cookies()

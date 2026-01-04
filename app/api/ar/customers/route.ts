@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = 'force-dynamic'
 import { getSession } from "@/lib/session";
-import { db } from "@/lib/database";
+import { db } from "@/db";
 import { hasPermission } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {

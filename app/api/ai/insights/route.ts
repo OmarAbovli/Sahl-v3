@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 import { requireAuth } from "@/lib/session"
 import { sql } from "@/lib/database"
 
@@ -6,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(["company_admin", "super_admin"])
 
-    if (!user.company_id && user.role !== "super_admin") {
+    if (!user.companyId && user.role !== "super_admin") {
       return NextResponse.json({ error: "Company not found" }, { status: 400 })
     }
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get("unread") === "true"
     const limit = Number.parseInt(searchParams.get("limit") || "20")
 
-    const companyId = user.company_id || 1
+    const companyId = user.companyId || 1
 
     let whereClause = `WHERE company_id = ${companyId} AND is_archived = false`
 
@@ -77,7 +78,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 })
     }
 
-    const companyId = user.company_id || 1
+    const companyId = user.companyId || 1
 
     let updateQuery = ""
     switch (action) {

@@ -4,7 +4,10 @@ import { users } from "@/db/schema"
 import { eq, and, sql, or, isNull, gt } from "drizzle-orm"
 import type { InferSelectModel } from "drizzle-orm"
 
-export type User = InferSelectModel<typeof users>
+export type User = InferSelectModel<typeof users> & {
+  user_id?: number
+  company_id?: number | null
+}
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12)
@@ -123,3 +126,5 @@ export function checkPermission(user: User, permission: string): boolean {
   // For employees, check custom permissions
   return (user.permissions as Record<string, boolean>)?.[permission] === true
 }
+
+export const hasPermission = checkPermission

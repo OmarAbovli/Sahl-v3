@@ -31,6 +31,13 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "@/hooks/use-translation"
 import { getTaxSummary } from "@/actions/tax"
 import { DataExportModal } from "@/components/data-export-modal"
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts"
+import { ChartTooltip } from "@/components/ui/chart"
 
 interface TaxManagementProps {
   user: any;

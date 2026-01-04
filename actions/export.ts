@@ -6,8 +6,8 @@ import {
     purchaseInvoices,
     inventory,
     journalEntries,
-    payroll,
-    hrEmployees,
+    payrollRunDetails as payroll,
+    employees,
     customers,
     suppliers
 } from "@/db/schema"
@@ -79,8 +79,8 @@ export async function exportModelData(
                 break;
 
             case "hr_employees":
-                data = await db.query.hrEmployees.findMany({
-                    where: eq(hrEmployees.companyId, companyId)
+                data = await db.query.employees.findMany({
+                    where: eq(employees.companyId, companyId)
                 })
                 data = data.map(item => ({
                     Number: item.employeeNumber,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 import { sql } from "@/lib/database"
 
 // GET /api/accounting/accounts?company_id=1
