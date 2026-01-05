@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+export const dynamic = 'force-dynamic'
 import { requireAuth } from "@/lib/session"
 import { SuperAdminDashboard } from "@/components/super-admin-dashboard"
 

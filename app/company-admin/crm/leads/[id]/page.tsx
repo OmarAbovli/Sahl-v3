@@ -1,5 +1,6 @@
 
 import { getCurrentUser } from "@/lib/session"
+export const dynamic = 'force-dynamic'
 import { redirect } from "next/navigation"
 import { db } from "@/db"
 import { leads, activities, deals } from "@/db/schema"

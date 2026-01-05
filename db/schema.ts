@@ -1448,3 +1448,60 @@ export const payrollRunDetails = pgTable("payroll_run_details", {
 		name: "payroll_details_employee_id_fkey"
 	}),
 ]);
+
+export const taxReports = pgTable("tax_reports", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	period: varchar({ length: 50 }).notNull(),
+	type: varchar({ length: 50 }).notNull(),
+	totalAmount: numeric("total_amount", { precision: 15, scale: 2 }).default('0'),
+	taxAmount: numeric("tax_amount", { precision: 15, scale: 2 }).default('0'),
+	status: varchar({ length: 20 }).default('pending'),
+	filed: boolean().default(false),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "tax_reports_company_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const taxFilings = pgTable("tax_filings", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	period: varchar({ length: 50 }).notNull(),
+	type: varchar({ length: 50 }).notNull(),
+	filed: boolean().default(true),
+	docUrl: text("doc_url"),
+	filedAt: timestamp("filed_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "tax_filings_company_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const aiReports = pgTable("ai_reports", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	title: varchar({ length: 255 }).notNull(),
+	description: text().notNull(),
+	reportType: varchar("report_type", { length: 50 }).notNull(),
+	generatedBy: integer("generated_by"),
+	metadata: jsonb(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "ai_reports_company_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.generatedBy],
+		foreignColumns: [users.id],
+		name: "ai_reports_generated_by_fkey"
+	}).onDelete("set null"),
+]);

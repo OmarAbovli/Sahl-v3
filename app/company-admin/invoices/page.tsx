@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+export const dynamic = 'force-dynamic'
 import { requireAuth } from "@/lib/session"
 import { DashboardShell } from "@/components/layout/dashboard-shell"
 import { InvoicesManagement } from "@/components/invoices-management"

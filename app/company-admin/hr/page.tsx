@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
+export const dynamic = 'force-dynamic'
 import { db } from "@/db"
 import { employees, attendanceRecords } from "@/db/schema"
 import { eq, and } from "drizzle-orm"

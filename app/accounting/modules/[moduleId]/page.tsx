@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation"
+export const dynamic = 'force-dynamic'
 import { ChartOfAccounts } from "@/components/accounting/chart-of-accounts"
 import { JournalEntries } from "@/components/accounting/journal-entries"
 import { CashBankManagement } from "@/components/cash-bank-management"

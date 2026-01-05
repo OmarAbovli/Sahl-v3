@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/session"
 import { redirect } from "next/navigation"
+export const dynamic = 'force-dynamic'
 import { db } from "@/db"
 import { getLeads, getDeals, getCRMStats } from "@/actions/crm"
 import { LeadManager } from "@/components/crm/lead-manager"

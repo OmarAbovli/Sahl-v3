@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/session"
+export const dynamic = 'force-dynamic'
 import { LoginForm } from "@/components/login-form"
 import { redirect } from "next/navigation"
 import { LanguageSwitcher } from "@/components/language-switcher"
