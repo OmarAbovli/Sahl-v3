@@ -1,13 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 import { requireAuth } from "@/lib/session"
-import { sql } from "@/lib/database"
+import { db } from "@/db"
+import { aiReports, aiInsights, invoices, inventory, debts } from "@/db/schema"
+import { eq, and, gte, sql as drizzleSql } from "drizzle-orm"
 import { aiService } from "@/lib/ai-service"
 
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(["company_admin", "super_admin"])
+    const companyId = user.company_id || user.companyId
 
-    if (!user.company_id && user.role !== "super_admin") {
+    if (!companyId && user.role !== "super_admin") {
       return NextResponse.json({ error: "Company not found" }, { status: 400 })
     }
 
@@ -21,22 +25,23 @@ export async function POST(request: NextRequest) {
     let title = ""
     let description = ""
 
-    const companyId = user.company_id || 1 // For super admin, use a default or handle differently
+    const targetCompanyId = companyId || 1 // For super admin
 
     switch (reportType) {
       case "sales_forecast":
         // Get sales data (invoices)
-        const salesData = await sql`
-          SELECT 
-            DATE_TRUNC('month', issue_date) as month,
-            SUM(amount) as total,
-            COUNT(*) as count
-          FROM invoices 
-          WHERE company_id = ${companyId}
-            AND issue_date >= NOW() - INTERVAL '12 months'
-          GROUP BY DATE_TRUNC('month', issue_date)
-          ORDER BY month
-        `
+        const salesData = await db.select({
+          month: drizzleSql`DATE_TRUNC('month', ${invoices.issueDate})`,
+          total: drizzleSql`SUM(${invoices.amount})`,
+          count: drizzleSql`COUNT(*)`
+        })
+          .from(invoices)
+          .where(and(
+            eq(invoices.companyId, targetCompanyId),
+            gte(invoices.issueDate, drizzleSql`NOW() - INTERVAL '12 months'`)
+          ))
+          .groupBy(drizzleSql`DATE_TRUNC('month', ${invoices.issueDate})`)
+          .orderBy(drizzleSql`month`)
 
         analysisResult = await aiService.generateSalesForecast(salesData, forecastMonths)
         title = `Sales Forecast - Next ${forecastMonths} Months`
@@ -44,11 +49,9 @@ export async function POST(request: NextRequest) {
         break
 
       case "inventory_analysis":
-        // Get inventory data
-        const inventoryData = await sql`
-          SELECT * FROM inventory 
-          WHERE company_id = ${companyId}
-        `
+        const inventoryData = await db.select()
+          .from(inventory)
+          .where(eq(inventory.companyId, targetCompanyId))
 
         analysisResult = await aiService.analyzeInventory(inventoryData)
         title = "Inventory Analysis & Optimization"
@@ -56,11 +59,9 @@ export async function POST(request: NextRequest) {
         break
 
       case "debt_analysis":
-        // Get debt data
-        const debtsData = await sql`
-          SELECT * FROM debts 
-          WHERE company_id = ${companyId}
-        `
+        const debtsData = await db.select()
+          .from(debts)
+          .where(eq(debts.companyId, targetCompanyId))
 
         analysisResult = await aiService.analyzeDebtCollection(debtsData)
         title = "Debt Collection Analysis"
@@ -68,18 +69,18 @@ export async function POST(request: NextRequest) {
         break
 
       case "revenue_forecast":
-        // Get revenue data from paid invoices
-        const revenueData = await sql`
-          SELECT 
-            DATE_TRUNC('month', issue_date) as month,
-            SUM(amount) as total
-          FROM invoices 
-          WHERE company_id = ${companyId}
-            AND status = 'paid'
-            AND issue_date >= NOW() - INTERVAL '12 months'
-          GROUP BY DATE_TRUNC('month', issue_date)
-          ORDER BY month
-        `
+        const revenueData = await db.select({
+          month: drizzleSql`DATE_TRUNC('month', ${invoices.issueDate})`,
+          total: drizzleSql`SUM(${invoices.amount})`
+        })
+          .from(invoices)
+          .where(and(
+            eq(invoices.companyId, targetCompanyId),
+            eq(invoices.status, 'paid'),
+            gte(invoices.issueDate, drizzleSql`NOW() - INTERVAL '12 months'`)
+          ))
+          .groupBy(drizzleSql`DATE_TRUNC('month', ${invoices.issueDate})`)
+          .orderBy(drizzleSql`month`)
 
         analysisResult = await aiService.generateSalesForecast(revenueData, forecastMonths)
         title = `Revenue Forecast - Next ${forecastMonths} Months`
@@ -91,42 +92,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Save the AI report
-    const report = await sql`
-      INSERT INTO ai_reports (
-        company_id, report_type, title, description, 
-        data_period_start, data_period_end, forecast_period_months,
-        analysis_data, results, insights, confidence_score, generated_by
-      )
-      VALUES (
-        ${companyId}, ${reportType}, ${title}, ${description},
-        ${new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]},
-        ${new Date().toISOString().split("T")[0]}, ${forecastMonths},
-        ${JSON.stringify({ dataSource, recordCount: analysisResult.forecasts.length })},
-        ${JSON.stringify(analysisResult)},
-        ${JSON.stringify(analysisResult.insights)},
-        ${0.85}, ${user.id}
-      )
-      RETURNING *
-    `
+    const [report] = await db.insert(aiReports).values({
+      companyId: targetCompanyId,
+      reportType,
+      title,
+      description,
+      dataPeriodStart: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      dataPeriodEnd: new Date().toISOString().split("T")[0],
+      forecastPeriodMonths: forecastMonths,
+      analysisData: { dataSource, recordCount: analysisResult.forecasts.length },
+      results: analysisResult,
+      insights: analysisResult.insights,
+      confidenceScore: "0.85",
+      generatedBy: user.id,
+      createdAt: new Date().toISOString(),
+    }).returning()
 
     // Save insights to ai_insights table
-    for (const insight of analysisResult.insights) {
-      await sql`
-        INSERT INTO ai_insights (
-          company_id, insight_type, category, title, description, 
-          severity, data_source, metadata
-        )
-        VALUES (
-          ${companyId}, ${insight.type}, ${insight.category}, ${insight.title}, 
-          ${insight.description}, ${insight.severity}, ${reportType},
-          ${JSON.stringify({ confidence: insight.confidence, recommendations: insight.recommendations })}
-        )
-      `
+    if (analysisResult.insights && analysisResult.insights.length > 0) {
+      await db.insert(aiInsights).values(analysisResult.insights.map((insight: any) => ({
+        companyId: targetCompanyId,
+        insightType: insight.type,
+        category: insight.category,
+        title: insight.title,
+        description: insight.description,
+        severity: insight.severity,
+        dataSource: reportType,
+        metadata: { confidence: insight.confidence, recommendations: insight.recommendations },
+        createdAt: new Date().toISOString(),
+      })))
     }
 
     return NextResponse.json({
       success: true,
-      report: report[0],
+      report,
       analysis: analysisResult,
     })
   } catch (error) {

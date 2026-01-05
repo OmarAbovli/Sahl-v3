@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 import { authenticateUser } from "@/lib/auth"
 import { createSession } from "@/lib/session"
 import { db } from "@/db"

@@ -1,52 +1,78 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/session';
-import { sql } from '@/lib/database';
-import { checkPermission } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
+import { getSession } from "@/lib/session"
+import { db } from "@/db"
+import { purchaseInvoices } from "@/db/schema"
+import { eq, and, desc, sql as drizzleSql, count } from "drizzle-orm"
+import { hasPermission } from "@/lib/auth"
 
 // GET: List purchase invoices for the current company with pagination and filters
 export async function GET(req: NextRequest) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!checkPermission(session, 'ap.view')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  const companyId = session.company_id;
-  const url = req.nextUrl || new URL(req.url);
-  const limit = parseInt(url.searchParams.get('limit') || '10');
-  const offset = parseInt(url.searchParams.get('offset') || '0');
-  const status = url.searchParams.get('status');
-  const supplier_id = url.searchParams.get('supplier_id');
-  const date_from = url.searchParams.get('date_from');
-  const date_to = url.searchParams.get('date_to');
-  let where = `WHERE company_id = ${companyId}`;
-  if (status) where += ` AND status = '${status}'`;
-  if (supplier_id) where += ` AND supplier_id = ${Number(supplier_id)}`;
-  if (date_from) where += ` AND issue_date >= '${date_from}'`;
-  if (date_to) where += ` AND issue_date <= '${date_to}'`;
-  const invoices = await sql.unsafe(`SELECT * FROM purchase_invoices ${where} ORDER BY issue_date DESC LIMIT ${limit} OFFSET ${offset}`);
-  const totalResult = await sql.unsafe(`SELECT COUNT(*) as total FROM purchase_invoices ${where}`);
-  const total = Number(totalResult[0]?.total || 0);
-  return NextResponse.json({ invoices, total });
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!hasPermission(session, "ap.view")) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+    const companyId = session.companyId || session.company_id
+    if (!companyId) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+    const url = req.nextUrl || new URL(req.url)
+    const limit = parseInt(url.searchParams.get("limit") || "10")
+    const offset = parseInt(url.searchParams.get("offset") || "0")
+    const status = url.searchParams.get("status")
+    const supplier_id = url.searchParams.get("supplier_id")
+    const date_from = url.searchParams.get("date_from")
+    const date_to = url.searchParams.get("date_to")
+
+    const conditions = [eq(purchaseInvoices.companyId, companyId)]
+    if (status) conditions.push(eq(purchaseInvoices.status, status))
+    if (supplier_id) conditions.push(eq(purchaseInvoices.supplierId, Number(supplier_id)))
+    if (date_from) conditions.push(drizzleSql`${purchaseInvoices.issueDate} >= ${date_from}`)
+    if (date_to) conditions.push(drizzleSql`${purchaseInvoices.issueDate} <= ${date_to}`)
+
+    const invoicesData = await db.select()
+      .from(purchaseInvoices)
+      .where(and(...conditions))
+      .orderBy(desc(purchaseInvoices.issueDate))
+      .limit(limit)
+      .offset(offset)
+
+    const [totalResult] = await db.select({ total: count() })
+      .from(purchaseInvoices)
+      .where(and(...conditions))
+
+    return NextResponse.json({ invoices: invoicesData, total: totalResult.total })
+  } catch (error) {
+    console.error("Fetch purchase invoices error:", error)
+    return NextResponse.json({ error: "Failed to fetch invoices" }, { status: 500 })
+  }
 }
 
 // POST: Create a new purchase invoice
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!checkPermission(session, 'ap.manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  const companyId = session.company_id;
-  const data = await req.json();
-  // TODO: Validate data
-  const result = await sql`
-    INSERT INTO purchase_invoices (company_id, supplier_id, status, issue_date, due_date, total, created_by)
-    VALUES (
-      ${companyId},
-      ${data.supplier_id || null},
-      ${data.status || 'draft'},
-      ${data.issue_date || new Date().toISOString().slice(0, 10)},
-      ${data.due_date || null},
-      ${data.total || 0},
-      ${session.id}
-    )
-    RETURNING *
-  `;
-  return NextResponse.json(result[0]);
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!hasPermission(session, "ap.manage")) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+    const companyId = session.companyId || session.company_id
+    if (!companyId) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+    const data = await req.json()
+
+    const [result] = await db.insert(purchaseInvoices).values({
+      companyId,
+      supplierId: data.supplier_id || null,
+      status: data.status || "draft",
+      issueDate: data.issue_date || new Date().toISOString().slice(0, 10),
+      dueDate: data.due_date || null,
+      total: data.total ? data.total.toString() : "0",
+      createdBy: session.id,
+    }).returning()
+
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error("Create purchase invoice error:", error)
+    return NextResponse.json({ error: "Failed to create invoice" }, { status: 500 })
+  }
 }

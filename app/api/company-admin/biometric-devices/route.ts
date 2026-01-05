@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/database"
+export const dynamic = 'force-dynamic'
+import { db } from "@/db"
+import { biometricDevices } from "@/db/schema"
+import { eq, desc } from "drizzle-orm"
+import { getSession } from "@/lib/session"
 
-// Helper to extract companyId from query string (for API routes)
-function getClientCompanyId(req: NextRequest): number | null {
+// Helper to extract companyId
+async function getEffectiveCompanyId(req: NextRequest): Promise<number | null> {
+  const session = await getSession()
+  if (session?.companyId || session?.company_id) return (session.companyId || session.company_id) as number
+
   const url = req.nextUrl || new URL(req.url)
   const companyIdParam = url.searchParams.get("company_id")
   if (!companyIdParam) return null
@@ -11,26 +18,27 @@ function getClientCompanyId(req: NextRequest): number | null {
 }
 
 export async function GET(req: NextRequest) {
-  const companyId = await getClientCompanyId(req)
+  const companyId = await getEffectiveCompanyId(req)
+  if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
-    const result = await sql`
-      SELECT * FROM biometric_devices
-      WHERE company_id = ${companyId}
-      ORDER BY created_at DESC
-    `
+    const result = await db.select()
+      .from(biometricDevices)
+      .where(eq(biometricDevices.companyId, companyId))
+      .orderBy(desc(biometricDevices.createdAt))
+
     return NextResponse.json(result)
   } catch (error: any) {
+    console.error("Fetch biometric devices error:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
-  const companyId = await getClientCompanyId(req)
-  const body = await req.json()
+  const companyId = await getEffectiveCompanyId(req)
+  if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  // Debug: log the incoming payload and companyId
-  console.log("Incoming POST /biometric-devices payload:", { companyId, ...body })
+  const body = await req.json()
 
   try {
     const {
@@ -46,38 +54,34 @@ export async function POST(req: NextRequest) {
       location,
     } = body
 
-    // Extra validation for required fields and types
-    if (!companyId || !device_name || !device_type || !ip_address) {
+    if (!device_name || !device_type || !ip_address) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+
     let portNumber = Number(port)
     if (isNaN(portNumber)) {
       return NextResponse.json({ error: "Port must be a number" }, { status: 400 })
     }
 
-    const result = await sql`
-      INSERT INTO biometric_devices (
-        company_id, device_name, device_type,
-        ip_address, port, model, serial_number,
-        protocol, username, password, location
-      ) VALUES (
-        ${companyId},
-        ${device_name},
-        ${device_type},
-        ${ip_address},
-        ${portNumber},
-        ${model ?? null},
-        ${serial_number ?? null},
-        ${protocol ?? null},
-        ${username ?? null},
-        ${password ?? null},
-        ${location ?? null}
-      ) RETURNING *
-    `
-    return NextResponse.json(result[0], { status: 201 })
+    const [device] = await db.insert(biometricDevices).values({
+      companyId,
+      deviceName: device_name,
+      deviceType: device_type,
+      ipAddress: ip_address,
+      port: portNumber,
+      model: model ?? null,
+      serialNumber: serial_number ?? null,
+      protocol: protocol ?? null,
+      username: username ?? null,
+      password: password ?? null,
+      location: location ?? null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }).returning()
+
+    return NextResponse.json(device, { status: 201 })
   } catch (error: any) {
-    // Log the error and payload for debugging
-    console.error("POST /biometric-devices error:", error, { companyId, ...body })
+    console.error("POST /biometric-devices error:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

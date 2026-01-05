@@ -1,25 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/lib/database";
+export const dynamic = 'force-dynamic'
+import { db } from "@/db";
+import { taxRules } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { requireAuth } from "@/lib/session";
-import { checkPermission } from "@/lib/auth";
+import { hasPermission } from "@/lib/auth";
 
 // GET: List tax rules
 export async function GET(req: NextRequest) {
-  const user = await requireAuth(["company_admin"]);
-  if (!checkPermission(user, "manage_tax")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const rules = await sql`SELECT * FROM tax_rules WHERE company_id = ${user.company_id} ORDER BY created_at DESC`;
-  return NextResponse.json({ rules });
+  try {
+    const user = await requireAuth(["company_admin"]);
+    if (!hasPermission(user, "manage_tax")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const companyId = user.companyId || user.company_id;
+    if (!companyId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const rules = await db.select()
+      .from(taxRules)
+      .where(eq(taxRules.companyId, companyId))
+      .orderBy(desc(taxRules.createdAt));
+
+    return NextResponse.json({ rules });
+  } catch (error) {
+    console.error("Fetch tax rules error:", error)
+    return NextResponse.json({ error: "Failed to fetch tax rules" }, { status: 500 });
+  }
 }
 
 // POST: Create tax rule
 export async function POST(req: NextRequest) {
-  const user = await requireAuth(["company_admin"]);
-  if (!checkPermission(user, "manage_tax")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const { name, rate, type, is_active } = await req.json();
-  const result = await sql`
-    INSERT INTO tax_rules (company_id, name, rate, type, is_active)
-    VALUES (${user.company_id}, ${name}, ${rate}, ${type}, ${is_active ?? true})
-    RETURNING *
-  `;
-  return NextResponse.json({ rule: result[0] });
-} 
+  try {
+    const user = await requireAuth(["company_admin"]);
+    if (!hasPermission(user, "manage_tax")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const companyId = user.companyId || user.company_id;
+    if (!companyId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { name, rate, type, is_active } = await req.json();
+
+    const [rule] = await db.insert(taxRules).values({
+      companyId,
+      name,
+      rate: rate.toString(),
+      type,
+      isActive: is_active ?? true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }).returning();
+
+    return NextResponse.json({ rule });
+  } catch (error) {
+    console.error("Create tax rule error:", error)
+    return NextResponse.json({ error: "Failed to create tax rule" }, { status: 500 });
+  }
+}

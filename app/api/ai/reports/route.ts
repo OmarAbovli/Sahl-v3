@@ -1,12 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 import { requireAuth } from "@/lib/session"
-import { sql } from "@/lib/database"
+import { db } from "@/db"
+import { aiReports, users } from "@/db/schema"
+import { eq, and, desc, count, sql as drizzleSql } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(["company_admin", "super_admin"])
+    const companyId = user.company_id || user.companyId
 
-    if (!user.company_id && user.role !== "super_admin") {
+    if (!companyId && user.role !== "super_admin") {
       return NextResponse.json({ error: "Company not found" }, { status: 400 })
     }
 
@@ -15,31 +19,35 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "10")
     const offset = Number.parseInt(searchParams.get("offset") || "0")
 
-    const companyId = user.company_id || 1
+    const targetCompanyId = companyId || 1
 
-    let whereClause = `WHERE company_id = ${companyId}`
+    const conditions = [eq(aiReports.companyId, targetCompanyId)]
     if (reportType) {
-      whereClause += ` AND report_type = '${reportType}'`
+      conditions.push(eq(aiReports.reportType, reportType))
     }
 
-    const reports = await sql`
-      SELECT 
-        r.*,
-        u.email as generated_by_email
-      FROM ai_reports r
-      LEFT JOIN users u ON r.generated_by = u.id
-      ${sql.unsafe(whereClause)}
-      ORDER BY r.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `
+    const reports = await db.select({
+      id: aiReports.id,
+      title: aiReports.title,
+      description: aiReports.description,
+      reportType: aiReports.reportType,
+      createdAt: aiReports.createdAt,
+      generatedByEmail: users.email
+    })
+      .from(aiReports)
+      .leftJoin(users, eq(aiReports.generatedBy, users.id))
+      .where(and(...conditions))
+      .orderBy(desc(aiReports.createdAt))
+      .limit(limit)
+      .offset(offset)
 
-    const totalResult = await sql`
-      SELECT COUNT(*) as total FROM ai_reports ${sql.unsafe(whereClause)}
-    `
+    const [totalResult] = await db.select({ total: count() })
+      .from(aiReports)
+      .where(and(...conditions))
 
     return NextResponse.json({
       reports,
-      total: Number.parseInt(totalResult[0].total),
+      total: totalResult.total,
       limit,
       offset,
     })

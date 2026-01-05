@@ -1,12 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 import { requireAuth } from "@/lib/session"
-import { sql } from "@/lib/database"
+import { db } from "@/db"
+import { supportTickets } from "@/db/schema"
+import { eq } from "drizzle-orm"
 
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(["company_admin"])
+    const companyId = user.company_id || user.companyId
 
-    if (!user.company_id) {
+    if (!companyId) {
       return NextResponse.json({ error: "Company not found" }, { status: 400 })
     }
 
@@ -16,13 +20,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Subject and message are required" }, { status: 400 })
     }
 
-    const result = await sql`
-      INSERT INTO support_tickets (company_id, created_by, subject, message, priority)
-      VALUES (${user.company_id}, ${user.id}, ${subject}, ${message}, ${priority || "medium"})
-      RETURNING *
-    `
+    const [ticket] = await db.insert(supportTickets).values({
+      companyId: Number(companyId),
+      createdBy: user.id,
+      subject,
+      message,
+      priority: priority || "medium",
+      status: "open",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }).returning()
 
-    return NextResponse.json({ ticket: result[0] })
+    return NextResponse.json({ ticket })
   } catch (error) {
     console.error("Error creating support ticket:", error)
     return NextResponse.json({ error: "Unauthorized or server error" }, { status: 401 })
