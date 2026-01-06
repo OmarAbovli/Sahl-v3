@@ -11,7 +11,7 @@ export default async function AdminInvoicesPage() {
         const navItems = getAdminNavItems()
 
         return (
-            <DashboardShell userRole={user.role} userName={user.email} navItems={navItems}>
+            <DashboardShell userRole={user.role} userName={user.email} companyId={user.companyId || undefined} navItems={navItems}>
                 <InvoicesManagement user={user as any} canManage={true} />
             </DashboardShell>
         )

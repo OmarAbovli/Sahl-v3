@@ -35,7 +35,7 @@ export default async function CompanyAdminPage() {
     const navItems = getAdminNavItems()
 
     return (
-      <DashboardShell userRole={user.role} userName={user.email} navItems={navItems}>
+      <DashboardShell userRole={user.role} userName={user.email} companyId={user.companyId || undefined} navItems={navItems}>
         <CompanyAdminDashboard user={user} stats={stats} />
       </DashboardShell>
     )

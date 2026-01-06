@@ -209,7 +209,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-3xl font-light text-white tracking-tight">{t('cash_bank')}</h1>
-          <p className="text-slate-400 text-sm uppercase tracking-widest font-bold mt-1">Treasury & Liquidity Management</p>
+          <p className="text-slate-400 text-sm uppercase tracking-widest font-bold mt-1">{t('treasury_liquidity_management')}</p>
         </div>
         <div className="flex gap-3">
           <Button variant="ghost" className="border-slate-800 text-slate-400 hover:text-white h-11 px-6 rounded-none" onClick={loadData}>
@@ -227,7 +227,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
             <Wallet className="h-16 w-16 text-white" />
           </div>
-          <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] font-bold">{t('total')} Liquidity</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] font-bold">{t('total_liquidity')}</p>
           <h3 className="text-4xl font-light text-white mt-2">{t('currency_symbol')} {totalLiquidity.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
           <div className="mt-6 flex items-center gap-2">
             <div className="h-1 w-full bg-slate-900 overflow-hidden">
@@ -244,8 +244,8 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
             <ArrowRight className={cn("h-5 w-5 text-emerald-500 opacity-0 group-hover:opacity-100 transition-all", isRTL && "rotate-180")} />
           </div>
           <div className="mt-8">
-            <h4 className="text-xl font-light text-white">Receive Payment</h4>
-            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">Capital Inflow Entry</p>
+            <h4 className="text-xl font-light text-white">{t('receive_payment')}</h4>
+            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">{t('capital_inflow_entry')}</p>
           </div>
         </motion.div>
 
@@ -257,8 +257,8 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
             <ArrowRight className={cn("h-5 w-5 text-rose-500 opacity-0 group-hover:opacity-100 transition-all", isRTL && "rotate-180")} />
           </div>
           <div className="mt-8">
-            <h4 className="text-xl font-light text-white">Issue Disbursement</h4>
-            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">Capital Outflow Entry</p>
+            <h4 className="text-xl font-light text-white">{t('issue_disbursement')}</h4>
+            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">{t('capital_outflow_entry')}</p>
           </div>
         </motion.div>
       </div>
@@ -294,7 +294,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
             </div>
 
             <div className="mt-8 flex items-baseline justify-between border-t border-slate-800/50 pt-4">
-              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold">Available Balance</span>
+              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold">{t('available_balance')}</span>
               <span className="text-xl font-mono text-white font-light">{t('currency_symbol')} {(parseFloat(acc.balance) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </motion.div>
@@ -306,12 +306,12 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
         <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-md p-0 overflow-hidden rounded-none">
           <div className="h-1 bg-amber-500 w-full"></div>
           <DialogHeader className="p-8 pb-4 text-center md:text-left">
-            <DialogTitle className="text-3xl font-light tracking-tight">Institutional Account Setup</DialogTitle>
-            <DialogDescription className="text-slate-500 uppercase tracking-[0.2em] text-[10px] font-bold">New Treasury Unit Configuration</DialogDescription>
+            <DialogTitle className="text-3xl font-light tracking-tight">{t('institutional_account_setup')}</DialogTitle>
+            <DialogDescription className="text-slate-500 uppercase tracking-[0.2em] text-[10px] font-bold">{t('new_treasury_unit_config')}</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Entity Identifier</Label>
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('entity_identifier')}</Label>
               <Input
                 className="bg-slate-900 border-slate-800 rounded-none h-12 text-sm"
                 placeholder="e.g. Master Operating Reserve"
@@ -321,17 +321,17 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Liquidity Class</Label>
+                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('liquidity_class')}</Label>
                 <Select value={newAccount.type} onValueChange={v => setNewAccount({ ...newAccount, type: v })}>
                   <SelectTrigger className="bg-slate-900 border-slate-800 rounded-none h-12 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    <SelectItem value="bank">Commercial Bank</SelectItem>
-                    <SelectItem value="cash">Internal Vault / Petty</SelectItem>
+                    <SelectItem value="bank">{t('commercial_bank')}</SelectItem>
+                    <SelectItem value="cash">{t('internal_vault_petty')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Associated Bank</Label>
+                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('associated_bank')}</Label>
                 <Input
                   className="bg-slate-900 border-slate-800 rounded-none h-12 text-sm"
                   placeholder="e.g. HSBC, Chase..."
@@ -341,7 +341,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Reference # / IBAN</Label>
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('iban_reference')}</Label>
               <Input
                 className="bg-slate-900 border-slate-800 rounded-none h-12 text-sm font-mono"
                 placeholder="0000 0000 0000..."
@@ -350,7 +350,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
               />
             </div>
             <Button className="w-full bg-white text-black hover:bg-amber-50 h-14 rounded-none uppercase tracking-[0.2em] text-[11px] font-bold shadow-2xl transition-all" onClick={handleCreateAccount}>
-              Initialize Treasury Account
+              {t('initialize_treasury_account')}
             </Button>
           </div>
         </DialogContent>
@@ -361,16 +361,16 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
         <SheetContent side={isRTL ? "left" : "right"} className="bg-slate-950 border-slate-800 text-white sm:max-w-md p-0 overflow-hidden flex flex-col">
           <div className="h-1 bg-emerald-500 w-full"></div>
           <SheetHeader className="p-10 border-b border-slate-800/50">
-            <SheetTitle className="text-3xl font-light text-white leading-tight">Capital Inflow Entry</SheetTitle>
-            <SheetDescription className="text-slate-500 uppercase tracking-widest text-[10px] font-bold mt-2">Accounts Receivable Liquidation</SheetDescription>
+            <SheetTitle className="text-3xl font-light text-white leading-tight">{t('capital_inflow_entry')}</SheetTitle>
+            <SheetDescription className="text-slate-500 uppercase tracking-widest text-[10px] font-bold mt-2">{t('ar_liquidation')}</SheetDescription>
           </SheetHeader>
           <div className="p-10 space-y-8 flex-1 overflow-y-auto">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Pending Invoice Selection</Label>
+                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('pending_invoice_selection')}</Label>
                 <Select value={paymentData.invoiceId} onValueChange={v => setPaymentData({ ...paymentData, invoiceId: v })}>
                   <SelectTrigger className="bg-slate-900 border-slate-800 rounded-none h-14 text-xs">
-                    <SelectValue placeholder="Locate Invoice Record" />
+                    <SelectValue placeholder={t('locate_invoice')} />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white max-h-[300px]">
                     {invoices.map(inv => (
@@ -383,10 +383,10 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Target Deposit Account</Label>
+                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('target_deposit_account')}</Label>
                 <Select value={paymentData.bankAccountId} onValueChange={v => setPaymentData({ ...paymentData, bankAccountId: v })}>
                   <SelectTrigger className="bg-slate-900 border-slate-800 rounded-none h-14 text-xs">
-                    <SelectValue placeholder="Select Destination Account" />
+                    <SelectValue placeholder={t('select_destination_account')} />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
                     {accounts.map(acc => (
@@ -398,7 +398,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
 
               <div className="grid grid-cols-2 gap-6 pt-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Transfer Amount</Label>
+                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('transfer_amount')}</Label>
                   <Input
                     type="number"
                     className="bg-slate-900 border-slate-800 rounded-none h-12 text-sm font-mono text-emerald-500"
@@ -407,7 +407,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Transaction Date</Label>
+                  <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('transaction_date')}</Label>
                   <Input
                     type="date"
                     className="bg-slate-900 border-slate-800 rounded-none h-12 text-xs pt-2"
@@ -420,7 +420,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
           </div>
           <div className="p-10 border-t border-slate-800 bg-slate-900/20">
             <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 rounded-none uppercase tracking-[0.2em] text-[11px] font-bold shadow-2xl transition-all" onClick={handleReceivePayment} disabled={isPending}>
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Authorize Inflow Entry"}
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('authorize_inflow')}
             </Button>
           </div>
         </SheetContent>
@@ -431,15 +431,15 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
         <SheetContent side={isRTL ? "left" : "right"} className="bg-slate-950 border-slate-800 text-white sm:max-w-md p-0 overflow-hidden flex flex-col">
           <div className="h-1 bg-rose-600 w-full"></div>
           <SheetHeader className="p-10 border-b border-slate-800/50">
-            <SheetTitle className="text-3xl font-light text-white leading-tight">Capital Disbursement</SheetTitle>
-            <SheetDescription className="text-slate-500 uppercase tracking-widest text-[10px] font-bold mt-2">Accounts Payable Fulfillment</SheetDescription>
+            <SheetTitle className="text-3xl font-light text-white leading-tight">{t('capital_disbursement')}</SheetTitle>
+            <SheetDescription className="text-slate-500 uppercase tracking-widest text-[10px] font-bold mt-2">{t('ap_fulfillment')}</SheetDescription>
           </SheetHeader>
           <div className="p-10 space-y-8 flex-1 overflow-y-auto">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Outstanding Liability</Label>
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('outstanding_liability')}</Label>
               <Select value={paymentData.invoiceId} onValueChange={v => setPaymentData({ ...paymentData, invoiceId: v })}>
                 <SelectTrigger className="bg-slate-900 border-slate-800 rounded-none h-14 text-xs font-mono">
-                  <SelectValue placeholder="Select Purchase Record" />
+                  <SelectValue placeholder={t('select_purchase_record')} />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white max-h-[300px]">
                   {orders.map(po => (
@@ -452,10 +452,10 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Source Funding Account</Label>
+              <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('source_funding_account')}</Label>
               <Select value={paymentData.bankAccountId} onValueChange={v => setPaymentData({ ...paymentData, bankAccountId: v })}>
                 <SelectTrigger className="bg-slate-900 border-slate-800 rounded-none h-14 text-xs font-sans">
-                  <SelectValue placeholder="Select Withdrawal Source" />
+                  <SelectValue placeholder={t('select_withdrawal_source')} />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
                   {accounts.map(acc => (
@@ -467,7 +467,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
 
             <div className="grid grid-cols-2 gap-6 pt-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Disbursement Amount</Label>
+                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('disbursement_amount')}</Label>
                 <Input
                   type="number"
                   className="bg-slate-900 border-slate-800 rounded-none h-12 text-sm font-mono text-rose-500"
@@ -476,7 +476,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Accounting Date</Label>
+                <Label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('accounting_date')}</Label>
                 <Input
                   type="date"
                   className="bg-slate-900 border-slate-800 rounded-none h-12 text-xs pt-2"
@@ -488,7 +488,7 @@ export function CashBankManagement({ user, canManage, canView }: CashBankManagem
           </div>
           <div className="p-10 border-t border-slate-800 bg-slate-900/20">
             <Button className="w-full bg-rose-600 hover:bg-rose-700 text-white h-14 rounded-none uppercase tracking-[0.2em] text-[11px] font-bold shadow-2xl transition-all" onClick={handleSendPayment} disabled={isPending}>
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Authorize Outflow Entry"}
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('authorize_outflow')}
             </Button>
           </div>
         </SheetContent>

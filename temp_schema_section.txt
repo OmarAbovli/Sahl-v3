@@ -1,0 +1,60 @@
+﻿
+export const fixedAssets = pgTable("fixed_assets", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	assetCode: varchar("asset_code", { length: 20 }).notNull(),
+	assetName: varchar("asset_name", { length: 255 }).notNull(),
+	category: varchar({ length: 100 }),
+	purchaseDate: date("purchase_date"),
+	purchaseCost: numeric("purchase_cost", { precision: 15, scale: 2 }).default('0'),
+	usefulLifeYears: integer("useful_life_years").default(0),
+	depreciationMethod: varchar("depreciation_method", { length: 50 }).default('straight_line'),
+	accumulatedDepreciation: numeric("accumulated_depreciation", { precision: 15, scale: 2 }).default('0'),
+	bookValue: numeric("book_value", { precision: 15, scale: 2 }).default('0'),
+	residualValue: numeric("residual_value", { precision: 15, scale: 2 }).default('0'),
+	depreciationRate: numeric("depreciation_rate", { precision: 5, scale: 2 }).default('0'),
+	lastDepreciationDate: date("last_depreciation_date"),
+	isActive: boolean("is_active").default(true),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	index("idx_fixed_assets_company").using("btree", table.companyId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "fixed_assets_company_id_fkey"
+	}).onDelete("cascade"),
+	unique("fixed_assets_company_id_asset_code_key").on(table.companyId, table.assetCode),
+]);
+
+export const taxSettings = pgTable("tax_settings", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	taxName: varchar("tax_name", { length: 100 }).notNull(),
+	taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).notNull(),
+	isDefault: boolean("is_default").default(false),
+	isActive: boolean("is_active").default(true),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "tax_settings_company_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const biometricDevices = pgTable("biometric_devices", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id"),
+	deviceName: varchar("device_name", { length: 255 }).notNull(),
+	deviceType: varchar("device_type", { length: 100 }),
+	ipAddress: varchar("ip_address", { length: 100 }),
+	port: integer().default(4370),
+	model: varchar({ length: 100 }),
+	serialNumber: varchar("serial_number", { length: 100 }),
+	protocol: varchar({ length: 50 }),
+	username: varchar({ length: 100 }),
+	password: varchar({ length: 100 }),
+	location: varchar({ length: 255 }),
+	isActive: boolean("is_active").default(true),
+	lastSync: timestamp("last_sync", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),

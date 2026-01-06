@@ -307,3 +307,88 @@ export async function getExportData(companyId: number, type: string, start?: str
         return { success: false, error: "Failed to export data" }
     }
 }
+
+export async function getIncomeStatement(companyId: number) {
+    try {
+        const revAccs = await db.query.chartOfAccounts.findMany({
+            where: and(eq(chartOfAccounts.companyId, companyId), eq(chartOfAccounts.accountType, 'revenue'))
+        })
+        const expAccs = await db.query.chartOfAccounts.findMany({
+            where: and(eq(chartOfAccounts.companyId, companyId), eq(chartOfAccounts.accountType, 'expense'))
+        })
+
+        const revenue = []
+        let totalRevenue = 0
+        for (const acc of revAccs) {
+            const res = await db.select({ val: sql`SUM(${journalLines.credit} - ${journalLines.debit})` }).from(journalLines).where(eq(journalLines.accountId, acc.id))
+            const bal = parseFloat(res[0]?.val as string) || 0
+            if (bal !== 0) {
+                revenue.push({ name: acc.accountName, code: acc.accountCode, balance: bal })
+                totalRevenue += bal
+            }
+        }
+
+        const expenses = []
+        let totalExpenses = 0
+        for (const acc of expAccs) {
+            const res = await db.select({ val: sql`SUM(${journalLines.debit} - ${journalLines.credit})` }).from(journalLines).where(eq(journalLines.accountId, acc.id))
+            const bal = parseFloat(res[0]?.val as string) || 0
+            if (bal !== 0) {
+                expenses.push({ name: acc.accountName, code: acc.accountCode, balance: bal })
+                totalExpenses += bal
+            }
+        }
+
+        return {
+            success: true,
+            data: {
+                revenue,
+                expenses,
+                totalRevenue,
+                totalExpenses,
+                netIncome: totalRevenue - totalExpenses
+            }
+        }
+    } catch (error) {
+        return { success: false, error: "Failed to load income statement" }
+    }
+}
+
+export async function getCashFlowStatement(companyId: number) {
+    try {
+        // Simple Cash Flow: Sum of all Dr In / Cr Out from Cash/Bank accounts
+        const liquidAccs = await db.query.chartOfAccounts.findMany({
+            where: and(eq(chartOfAccounts.companyId, companyId), sql`${chartOfAccounts.accountCode} LIKE '10%'`)
+        })
+        const ids = liquidAccs.map(a => a.id)
+        if (ids.length === 0) return { success: true, data: { inflows: [], outflows: [], totalNet: 0 } }
+
+        const activities = await db.select({
+            type: sql`CASE WHEN ${journalLines.debit} > 0 THEN 'inflow' ELSE 'outflow' END`,
+            amount: sql`SUM(ABS(${journalLines.debit} - ${journalLines.credit}))`,
+            desc: journalEntries.description
+        })
+            .from(journalLines)
+            .innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+            .where(sql`${journalLines.accountId} IN ${ids}`)
+            .groupBy(sql`CASE WHEN ${journalLines.debit} > 0 THEN 'inflow' ELSE 'outflow' END`, journalEntries.description)
+            .limit(20)
+
+        const inflows = activities.filter((a: any) => a.type === 'inflow')
+        const outflows = activities.filter((a: any) => a.type === 'outflow')
+
+        const totalIn = inflows.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0)
+        const totalOut = outflows.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0)
+
+        return {
+            success: true,
+            data: {
+                inflows,
+                outflows,
+                totalNet: totalIn - totalOut
+            }
+        }
+    } catch (error) {
+        return { success: false, error: "Failed to load cash flow" }
+    }
+}

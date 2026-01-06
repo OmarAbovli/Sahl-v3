@@ -106,6 +106,8 @@ export async function seedBasePermissions() {
         { name: "manage_leave_requests", description: "Approve/Reject Leave Requests" },
         { name: "view_assets", description: "View Fixed Assets Ledger" },
         { name: "manage_assets", description: "Register & Depreciate Assets" },
+        { name: "view_treasury", description: "Access Treasury & Session Management" },
+        { name: "manage_treasury", description: "Open/Close Sessions and Manage Transfers" },
         { name: "manage_company_profile", description: "Update Company Legal/Visual Identity" },
         { name: "view_admin_panel", description: "Access Admin Oversight Tools" }
     ]

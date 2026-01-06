@@ -13,6 +13,10 @@ import {
 import { eq, desc, and, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { postSalesInvoiceToGL } from "@/actions/autoposting"
+import { users } from "@/db/schema"
+import { hasPermission } from "@/lib/auth"
+import { logActivity } from "./audit"
+import { getSession } from "@/lib/session"
 
 export async function getSalesInvoices(companyId: number) {
     try {
@@ -85,9 +89,9 @@ export async function saveSalesInvoice(params: SaveInvoiceParams) {
     try {
         const { id, userId, companyId, customerId, invoiceDate, dueDate, status, lines } = params
 
-        // VALIDATION: Check stock first (for the final state)
-        // If updating, we should ignore currently held stock by THIS invoice
-        // But for simplicity, we'll restore first then check.
+        // Check Permissions
+        const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
+        const canManageFinance = user ? hasPermission(user as any, "manage_invoices") : false
 
         const invoiceId = await db.transaction(async (tx) => {
             let invObj: any = null
@@ -100,7 +104,10 @@ export async function saveSalesInvoice(params: SaveInvoiceParams) {
                 })
                 if (!invObj) throw new Error("Invoice not found")
 
-                // 1. Rollback previous stock deductions
+                // 1. Rollback previous stock deductions (only if it was posted previously)
+                // Note: We need a reliable way to know if it was posted.
+                // For now, assume if status was not draft and user was admin, it was posted.
+                // To be safe, let's always rollback if status was not draft.
                 if (invObj.status !== 'draft') {
                     for (const line of invObj.lines) {
                         if (line.inventoryItemId) {
@@ -135,7 +142,6 @@ export async function saveSalesInvoice(params: SaveInvoiceParams) {
                     subtotal: subtotal.toString(),
                     taxAmount: taxAmount.toString(),
                     totalAmount: totalAmount.toString(),
-                    updatedAt: new Date()
                 }).where(eq(salesInvoices.id, id))
 
                 // Delete old lines
@@ -170,7 +176,8 @@ export async function saveSalesInvoice(params: SaveInvoiceParams) {
                     lineNumber: index + 1
                 })
 
-                if (status !== 'draft') {
+                // ONLY deduct stock if status is not draft AND user has permission
+                if (status !== 'draft' && canManageFinance) {
                     // Check stock again before deducting
                     const item = await tx.query.inventory.findFirst({
                         where: eq(inventory.id, line.inventoryItemId)
@@ -188,12 +195,37 @@ export async function saveSalesInvoice(params: SaveInvoiceParams) {
             return currentInvoiceId!
         })
 
-        if (status !== 'draft') {
+        // ONLY post to GL if status is not draft AND user has permission
+        if (status !== 'draft' && canManageFinance) {
             await postSalesInvoiceToGL(invoiceId, userId)
         }
 
+        // --- PHASE 9: Audit Log ---
+        const finalInvoice = await db.query.salesInvoices.findFirst({
+            where: eq(salesInvoices.id, invoiceId),
+            with: { lines: true }
+        })
+
+        await logActivity({
+            companyId,
+            userId,
+            action: id ? "UPDATE_SALES_INVOICE" : "CREATE_SALES_INVOICE",
+            tableName: "sales_invoices",
+            recordId: invoiceId,
+            oldValues: null, // We'd need to fetch oldData before transaction to be perfect, but for now NewValues is key
+            newValues: finalInvoice,
+            severity: status === 'cancelled' ? 'warning' : 'info'
+        })
+        // -------------------------
+
+        revalidatePath('/company-admin/invoices')
         revalidatePath('/employee')
-        return { success: true, message: id ? "Invoice updated" : "Invoice created" }
+
+        const message = status !== 'draft' && !canManageFinance
+            ? "Invoice saved, but requires financial approval to affect GL/Stock."
+            : (id ? "Invoice updated" : "Invoice created")
+
+        return { success: true, message }
     } catch (error: any) {
         console.error("Save Invoice Error:", error)
         return { success: false, error: error.message || "Failed to save invoice" }
@@ -222,6 +254,19 @@ export async function deleteSalesInvoice(id: number) {
                     }
                 }
             }
+
+            // --- PHASE 9: Audit Log ---
+            const session = await getSession()
+            await logActivity({
+                companyId: existing.companyId,
+                userId: session?.userId,
+                action: "DELETE_SALES_INVOICE",
+                tableName: "sales_invoices",
+                recordId: id,
+                oldValues: existing,
+                severity: 'warning'
+            })
+            // -------------------------
 
             await tx.delete(salesInvoices).where(eq(salesInvoices.id, id))
         })

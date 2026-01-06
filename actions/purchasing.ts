@@ -11,6 +11,8 @@ import {
 import { eq, desc, and, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { postPurchaseOrderToGL } from "@/actions/autoposting"
+import { users } from "@/db/schema"
+import { hasPermission } from "@/lib/auth"
 
 export async function getPurchaseOrders(companyId: number) {
     try {
@@ -74,6 +76,10 @@ export async function createPurchaseOrder(params: CreatePOParams) {
     try {
         const { userId, companyId, supplierId, orderDate, expectedDate, status, lines } = params
 
+        // Check Permissions
+        const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
+        const canManageFinance = user ? hasPermission(user as any, "manage_invoices") : false
+
         // PO Number Auto-generation
         const poNum = `PO-${Date.now().toString().slice(-6)}`
 
@@ -109,8 +115,8 @@ export async function createPurchaseOrder(params: CreatePOParams) {
                     lineNumber: index + 1
                 })
 
-                // 3. Update Inventory IF received (Add stock)
-                if (status === 'received') {
+                // 3. Update Inventory IF received (Add stock) - ONLY if authorized
+                if (status === 'received' && canManageFinance) {
                     await tx
                         .update(inventory)
                         .set({ quantity: sql`${inventory.quantity} + ${line.quantity}` })
@@ -120,12 +126,16 @@ export async function createPurchaseOrder(params: CreatePOParams) {
             return newPO.id
         })
 
-        if (status === 'received') {
+        if (status === 'received' && canManageFinance) {
             await postPurchaseOrderToGL(poId, userId)
         }
 
-        revalidatePath('/employee')
-        return { success: true, message: "Purchase Order created successfully" }
+        revalidatePath('/company-admin/purchasing')
+        const message = status === 'received' && !canManageFinance
+            ? "PO created, but requires manager approval for stock/GL impact."
+            : "Purchase Order created successfully"
+
+        return { success: true, message }
 
     } catch (error: any) {
         console.error("Create PO Error:", error)
@@ -135,6 +145,14 @@ export async function createPurchaseOrder(params: CreatePOParams) {
 
 export async function updatePOStatus(id: number, newStatus: string, userId: number) {
     try {
+        // Check Permissions
+        const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
+        const canManageFinance = user ? hasPermission(user as any, "manage_invoices") : false
+
+        if (newStatus === 'received' && !canManageFinance) {
+            return { success: false, error: "Unauthorized: Only finance managers can receive goods." }
+        }
+
         await db.transaction(async (tx) => {
             const po = await tx.query.purchaseOrders.findFirst({
                 where: eq(purchaseOrders.id, id),
@@ -169,19 +187,13 @@ export async function updatePOStatus(id: number, newStatus: string, userId: numb
             }
 
             await tx.update(purchaseOrders).set({ status: newStatus }).where(eq(purchaseOrders.id, id))
-            return po.companyId // Return companyId if needed, or just succeed
         })
 
         // Auto-Post if became received
         if (newStatus === 'received') {
-            // We need userId. We don't have it here.
-            // Ideally updatePOStatus should take userId.
-            // For now, let's assume system user or pass it.
-            // Use 999 or find createdBy?
-            // Fetch PO again to see createdBy?
-            // Let's modify the signature of updatePOStatus to take userId.
+            await postPurchaseOrderToGL(id, userId)
         }
-        revalidatePath('/employee')
+        revalidatePath('/company-admin/purchasing')
         return { success: true }
     } catch (error) {
         return { success: false, error: "Failed to update status" }

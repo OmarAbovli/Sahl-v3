@@ -70,6 +70,7 @@ export function EmployeesManagement({ user, canManage }: EmployeesManagementProp
   const [resettingPasswordUser, setResettingPasswordUser] = useState<any>(null)
   const [newPassword, setNewPassword] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedDossierEmployee, setSelectedDossierEmployee] = useState<any>(null)
 
   const [formData, setFormData] = useState({
     employeeNumber: "",
@@ -352,8 +353,12 @@ export function EmployeesManagement({ user, canManage }: EmployeesManagementProp
               </div>
 
               <div className="mt-8">
-                <Button variant="outline" className="w-full border-slate-800 rounded-none h-10 text-[9px] uppercase font-black hover:bg-slate-900 group/btn">
-                  View Complete Dossier <ArrowRight className={cn("h-3 w-3 transition-transform group-hover/btn:translate-x-1", isRTL ? "mr-2 rotate-180" : "ml-2")} />
+                <Button
+                  onClick={() => setSelectedDossierEmployee(emp)}
+                  variant="outline"
+                  className="w-full border-slate-800 rounded-none h-10 text-[9px] uppercase font-black hover:bg-slate-900 group/btn"
+                >
+                  {t('view_dossier')} <ArrowRight className={cn("h-3 w-3 transition-transform group-hover/btn:translate-x-1", isRTL ? "mr-2 rotate-180" : "ml-2")} />
                 </Button>
               </div>
             </motion.div>
@@ -513,6 +518,96 @@ export function EmployeesManagement({ user, canManage }: EmployeesManagementProp
               </Button>
             </DialogFooter>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Personnel Dossier Dialog */}
+      <Dialog open={!!selectedDossierEmployee} onOpenChange={() => setSelectedDossierEmployee(null)}>
+        <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-2xl p-0 overflow-hidden rounded-none shadow-3xl">
+          <div className="h-1 bg-amber-500 w-full shadow-lg shadow-amber-500/20"></div>
+          <DialogHeader className="p-10 pb-4">
+            <DialogTitle className="text-3xl font-light tracking-tight items-center flex gap-3">
+              <UserIcon className="h-8 w-8 text-amber-500" />
+              {t('personnel_dossier')}
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 uppercase tracking-widest font-bold text-[10px] mt-2">
+              Reference: #{selectedDossierEmployee?.employeeNumber} | {selectedDossierEmployee?.firstName} {selectedDossierEmployee?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-10 space-y-8">
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h4 className="text-[10px] uppercase font-black tracking-widest text-slate-500 border-b border-white/5 pb-2">{t('access_credentials')}</h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-[9px] text-slate-600 block mb-1 uppercase tracking-tighter">{t('username')} (Login ID)</Label>
+                    <div className="text-base font-mono text-amber-500 bg-amber-500/5 p-3 border border-amber-500/10 font-black tracking-widest">
+                      {selectedDossierEmployee?.user?.uniqueKey}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-slate-600 block mb-1 uppercase tracking-tighter">Default Password</Label>
+                    <div className="text-base font-mono text-white bg-slate-900 p-3 border border-white/5">
+                      123456
+                    </div>
+                    <p className="text-[8px] text-slate-500 mt-1 uppercase tracking-widest italic">Note: Use this if password wasn't changed.</p>
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-slate-600 block mb-1 uppercase tracking-tighter">{t('account_status')}</Label>
+                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 rounded-none uppercase text-[9px] px-3">
+                      Active Secured
+                    </Badge>
+                  </div>
+                  <div className="pt-2">
+                    <Button
+                      onClick={() => {
+                        setResettingPasswordUser(selectedDossierEmployee);
+                        setSelectedDossierEmployee(null);
+                      }}
+                      variant="ghost"
+                      className="h-8 text-[9px] uppercase font-bold text-rose-500 hover:text-rose-400 hover:bg-rose-500/5 p-0"
+                    >
+                      <ShieldCheck className="h-3 w-3 mr-2" /> {t('reset_password')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-[10px] uppercase font-black tracking-widest text-slate-500 border-b border-white/5 pb-2">Employment Details</h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-[9px] text-slate-600 block mb-1 uppercase tracking-tighter">{t('position')}</Label>
+                    <div className="text-sm text-slate-300 font-medium">
+                      {selectedDossierEmployee?.position}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-slate-600 block mb-1 uppercase tracking-tighter">{t('department')}</Label>
+                    <div className="text-sm text-slate-300 font-medium">
+                      {selectedDossierEmployee?.department}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-slate-600 block mb-1 uppercase tracking-tighter">{t('salary')}</Label>
+                    <div className="text-lg font-mono text-white font-bold">
+                      {t('currency_symbol')} {parseFloat(selectedDossierEmployee?.salary || '0').toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-10 pt-6 border-t border-white/5">
+            <Button
+              onClick={() => setSelectedDossierEmployee(null)}
+              className="bg-slate-900 text-slate-400 hover:text-white h-12 px-8 rounded-none uppercase tracking-widest text-[10px] font-bold"
+            >
+              {t('close')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

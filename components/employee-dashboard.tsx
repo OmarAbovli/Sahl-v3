@@ -21,7 +21,9 @@ import {
   BookOpen,
   Calculator,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck,
+  Factory
 } from "lucide-react"
 import type { User } from "@/lib/auth"
 import { useTranslation } from "@/hooks/use-translation"
@@ -44,8 +46,10 @@ import { TaxManagement } from "@/components/tax-management"
 import { ChartOfAccounts } from "@/components/chart-of-accounts"
 import { GeneralLedger } from "@/components/general-ledger"
 import { FinancialReports } from "@/components/financial-reports"
+import { TreasuryManagement } from "@/components/treasury-management"
 import { AccountsReceivableManagement } from "@/components/accounts-receivable-management"
 import { AccountsPayableManagement } from "@/components/accounts-payable-management"
+import { ManufacturingManagement } from "@/components/manufacturing-management"
 
 interface EmployeeDashboardProps {
   user: User
@@ -70,6 +74,8 @@ type ActiveModule =
   | "accounts_receivable"
   | "accounts_payable"
   | "financial_reports"
+  | "treasury"
+  | "manufacturing"
 
 export function EmployeeDashboard({ user }: EmployeeDashboardProps) {
   const { t, isRTL } = useTranslation()
@@ -118,6 +124,8 @@ export function EmployeeDashboard({ user }: EmployeeDashboardProps) {
       case "accounts_receivable": return FileText
       case "accounts_payable": return CreditCard
       case "financial_reports": return BarChart3
+      case "treasury": return ShieldCheck
+      case "manufacturing": return Factory
       default: return Package
     }
   }
@@ -138,8 +146,10 @@ export function EmployeeDashboard({ user }: EmployeeDashboardProps) {
     { id: "fixed_assets", name: t("fixed_assets"), description: t("finance_desc") },
     { id: "tax_management", name: t("tax_management"), description: t("finance_desc") },
     { id: "financial_reports", name: t("financial_reports"), description: t("finance_desc") },
+    { id: "treasury", name: t("treasury"), description: t("finance_desc") },
     { id: "reports", name: t("general_reports"), description: t("analytics") },
     { id: "debts", name: t("debt_management"), description: t("finance_desc") },
+    { id: "manufacturing", name: t("manufacturing"), description: t("operations_desc") },
   ].filter(
     (module) => {
       if (module.id === 'accounting') return false // Hide generic accounting if specific modules are used
@@ -170,12 +180,14 @@ export function EmployeeDashboard({ user }: EmployeeDashboardProps) {
       case "purchasing": return <ContentWrapper><PurchasingManagement user={user as any} canManage={canManage("purchasing")} canView={canView("purchasing")} /></ContentWrapper>
       case "hr_payroll": return <ContentWrapper><HRPayrollManagement user={user as any} canManage={canManage("hr_payroll")} canView={canView("hr_payroll")} /></ContentWrapper>
       case "cash_bank": return <ContentWrapper><CashBankManagement user={user as any} canManage={canManage("cash_bank")} canView={canView("cash_bank")} /></ContentWrapper>
-      case "fixed_assets": return <ContentWrapper><FixedAssetsManagement user={user as any} canManage={canManage("fixed_assets")} canView={canView("fixed_assets")} /></ContentWrapper>
+      case "fixed_assets": return <ContentWrapper><FixedAssetsManagement user={user as any} companyId={user.companyId || (user as any).company_id} canManage={canManage("fixed_assets")} canView={canView("fixed_assets")} /></ContentWrapper>
       case "tax_management": return <ContentWrapper><TaxManagement user={user as any} canManage={canManage("tax_management")} canView={canView("tax_management")} /></ContentWrapper>
       case "general_ledger": return <ContentWrapper><ChartOfAccounts user={user as any} /></ContentWrapper>
       case "accounts_receivable": return <ContentWrapper><AccountsReceivableManagement user={user as any} canManage={canManage("accounts_receivable")} canView={canView("accounts_receivable")} /></ContentWrapper>
       case "accounts_payable": return <ContentWrapper><AccountsPayableManagement user={user as any} canManage={canManage("accounts_payable")} canView={canView("accounts_payable")} /></ContentWrapper>
       case "financial_reports": return <ContentWrapper><FinancialReports user={user as any} canManage={canManage("financial_reports")} canView={canView("financial_reports")} /></ContentWrapper>
+      case "treasury": return <ContentWrapper><TreasuryManagement user={user as any} canManage={canManage("treasury")} canView={canView("treasury")} /></ContentWrapper>
+      case "manufacturing": return <ContentWrapper><ManufacturingManagement user={user as any} canManage={canManage("manufacturing")} /></ContentWrapper>
 
       default: return renderOverview()
     }

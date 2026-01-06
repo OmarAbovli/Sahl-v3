@@ -33,6 +33,7 @@ export function getAdminNavItems(): NavGroup[] {
             items: [
                 { name: "General Ledger", href: "/company-admin/accounting?view=general_ledger", iconName: "BookOpen" },
                 { name: "Cash & Bank", href: "/company-admin/accounting?view=cash_bank", iconName: "Banknote" },
+                { name: "Treasury", href: "/company-admin/accounting?view=treasury", iconName: "ShieldCheck" },
                 { name: "Receivables", href: "/company-admin/accounting?view=accounts_receivable", iconName: "FileText" },
                 { name: "Payables", href: "/company-admin/accounting?view=accounts_payable", iconName: "CreditCard" },
                 { name: "Tax Management", href: "/company-admin/accounting?view=tax_management", iconName: "Calculator" },
@@ -45,6 +46,7 @@ export function getAdminNavItems(): NavGroup[] {
                 { name: "Inventory", href: "/company-admin/inventory", iconName: "Package" },
                 { name: "Warehouses", href: "/company-admin/warehouses", iconName: "Warehouse" },
                 { name: "Fixed Assets", href: "/company-admin/accounting?view=fixed_assets", iconName: "Building" },
+                { name: "Manufacturing", href: "/company-admin/manufacturing", iconName: "Factory" },
             ]
         },
         {
@@ -52,7 +54,12 @@ export function getAdminNavItems(): NavGroup[] {
             items: [
                 { name: "Employees", href: "/company-admin/employees", iconName: "Users" },
                 { name: "HR Dashboard", href: "/company-admin/hr", iconName: "Users" },
-                { name: "Payroll", href: "/company-admin/hr?view=payroll", iconName: "DollarSign" },
+            ]
+        },
+        {
+            title: "Security & Logs",
+            items: [
+                { name: "Audit Trails", href: "/company-admin/audit", iconName: "History" },
             ]
         }
     ]
@@ -88,6 +95,7 @@ export function getEmployeeNavItems(user: User): NavGroup[] {
     const finItems: NavItem[] = []
     if (hasAccess('general_ledger')) finItems.push({ name: "General Ledger", href: "/employee?view=general_ledger", iconName: "BookOpen" })
     if (hasAccess('cash_bank')) finItems.push({ name: "Cash & Bank", href: "/employee?view=cash_bank", iconName: "Banknote" })
+    if (hasAccess('treasury')) finItems.push({ name: "Treasury", href: "/employee?view=treasury", iconName: "ShieldCheck" })
     if (hasAccess('accounts_receivable')) finItems.push({ name: "Receivables", href: "/employee?view=accounts_receivable", iconName: "FileText" })
     if (hasAccess('accounts_payable')) finItems.push({ name: "Payables", href: "/employee?view=accounts_payable", iconName: "CreditCard" })
     if (hasAccess('tax_management')) finItems.push({ name: "Tax Management", href: "/employee?view=tax_management", iconName: "Calculator" })
@@ -108,6 +116,14 @@ export function getEmployeeNavItems(user: User): NavGroup[] {
 
     if (hrItems.length > 0) {
         groups.push({ title: "Human Resources", items: hrItems })
+    }
+
+    // 5. Manufacturing
+    const mfgItems: NavItem[] = []
+    if (hasAccess('manufacturing')) mfgItems.push({ name: "Manufacturing", href: "/employee?view=manufacturing", iconName: "Factory" })
+
+    if (mfgItems.length > 0) {
+        groups.push({ title: "Manufacturing", items: mfgItems })
     }
 
     return groups

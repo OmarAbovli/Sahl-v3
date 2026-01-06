@@ -49,7 +49,7 @@ async function HRDashboard({
     const totalEmployees = await db.$count(employees, eq(employees.companyId, companyId))
 
     return (
-        <DashboardShell userRole={user.role} userName={user.email} navItems={navItems}>
+        <DashboardShell userRole={user.role} userName={user.email} companyId={user.companyId} navItems={navItems}>
             <div className="space-y-8">
                 <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-light text-white tracking-tight">Human Resources Management</h1>

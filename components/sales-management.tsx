@@ -257,7 +257,7 @@ export function SalesManagement({ user, canManage, canView }: SalesManagementPro
           <div>
             <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">{t('status')}</p>
             <h3 className="text-3xl font-light text-white mt-1">
-              {invoices.filter(i => i.status !== 'paid').length} {t('pending' as any)}
+              {invoices.filter(i => i.status !== 'paid').length} {t('pending')}
             </h3>
           </div>
         </div>
@@ -316,7 +316,7 @@ export function SalesManagement({ user, canManage, canView }: SalesManagementPro
                   <tr key={inv.id} className="hover:bg-slate-900/50 transition-colors group">
                     <td className="px-6 py-4 font-medium text-white">{inv.invoiceNumber}</td>
                     <td className="px-6 py-4 text-slate-300">
-                      {inv.customer?.name || inv.clientName || 'Unknown'}
+                      {inv.customer?.name || inv.clientName || t('unknown')}
                     </td>
                     <td className="px-6 py-4 text-slate-400">{format(new Date(inv.invoiceDate), 'MMM dd, yyyy')}</td>
                     <td className="px-6 py-4">
@@ -434,9 +434,9 @@ export function SalesManagement({ user, canManage, canView }: SalesManagementPro
             {/* Line Items */}
             <div className="space-y-4 pt-4 border-t border-slate-800">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-slate-300 uppercase tracking-widest">{t('details' as any)}</h3>
+                <h3 className="text-sm font-medium text-slate-300 uppercase tracking-widest">{t('invoice_items')}</h3>
                 <Button variant="ghost" size="sm" onClick={addLineItem} className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10">
-                  <Plus className="h-3 w-3 mr-1" /> {t('add')}
+                  <Plus className="h-3 w-3 mr-1" /> {t('add')} {t('item')}
                 </Button>
               </div>
 
@@ -446,7 +446,7 @@ export function SalesManagement({ user, canManage, canView }: SalesManagementPro
                     <Label className="text-[10px] text-slate-500 uppercase">{t('inventory')}</Label>
                     <Select value={line.inventoryItemId} onValueChange={(v) => updateLineItem(idx, 'inventoryItemId', v)}>
                       <SelectTrigger className="h-9 text-[10px] bg-slate-950 border-slate-800">
-                        <SelectValue placeholder={t('select' as any)} />
+                        <SelectValue placeholder={t('select')} />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         {inventoryItems.map(item => (
@@ -477,7 +477,7 @@ export function SalesManagement({ user, canManage, canView }: SalesManagementPro
                     />
                   </div>
                   <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] text-slate-500 uppercase">VAT%</Label>
+                    <Label className="text-[10px] text-slate-500 uppercase">{t('tax_rate')}</Label>
                     <Select value={line.taxRate?.toString()} onValueChange={(v) => updateLineItem(idx, 'taxRate', parseFloat(v))}>
                       <SelectTrigger className="h-9 text-[10px] bg-slate-950 border-slate-800">
                         <SelectValue />
@@ -515,7 +515,7 @@ export function SalesManagement({ user, canManage, canView }: SalesManagementPro
             </div>
 
             <Button className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white font-medium text-lg shadow-[0_4px_14px_0_rgba(217,119,6,0.3)] transition-all" onClick={handleSaveInvoice} disabled={isPending}>
-              {isPending ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : (editingId ? t('update') : t('create')) + " " + t('invoice_number')}
+              {isPending ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : (editingId ? t('update') : t('create')) + " " + t('invoice')}
             </Button>
           </div>
         </SheetContent>
@@ -533,7 +533,7 @@ export function SalesManagement({ user, canManage, canView }: SalesManagementPro
                 </DialogDescription>
               </div>
               <Button variant="outline" className="border-slate-800 text-slate-400" onClick={() => window.print()}>
-                <Printer className="h-4 w-4 mr-2" /> {t('export')}
+                <Printer className={cn("h-4 w-4", isRTL ? "ml-2" : "mr-2")} /> {t('print')}
               </Button>
             </div>
           </DialogHeader>

@@ -491,6 +491,7 @@ export const products = pgTable("products", {
 	sellingPrice: numeric("selling_price", { precision: 15, scale: 2 }).default('0'),
 	taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).default('0'),
 	reorderLevel: integer("reorder_level").default(0),
+	productType: varchar("product_type", { length: 50 }).default('product'), // product, raw_material, service
 	isActive: boolean("is_active").default(true),
 	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
@@ -654,6 +655,12 @@ export const fixedAssets = pgTable("fixed_assets", {
 	depreciationRate: numeric("depreciation_rate", { precision: 5, scale: 2 }).default('0'),
 	lastDepreciationDate: date("last_depreciation_date"),
 	isActive: boolean("is_active").default(true),
+	serialNumber: varchar("serial_number", { length: 100 }),
+	location: varchar({ length: 255 }),
+	department: varchar({ length: 100 }),
+	vendor: varchar({ length: 255 }),
+	condition: varchar({ length: 50 }).default('good'), // good, fair, poor, damaged
+	insuranceDetails: text("insurance_details"),
 	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
 	index("idx_fixed_assets_company").using("btree", table.companyId.asc().nullsLast().op("int4_ops")),
@@ -847,6 +854,7 @@ export const cashBankAccounts = pgTable("cash_bank_accounts", {
 	accountNumber: varchar("account_number", { length: 50 }),
 	bankName: varchar("bank_name", { length: 100 }),
 	type: varchar({ length: 20 }).notNull(),
+	currency: varchar({ length: 10 }).default('EGP').notNull(),
 	isActive: boolean("is_active").default(true),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
@@ -1011,6 +1019,11 @@ export const userRoles = pgTable("user_roles", {
 	roleId: integer("role_id").notNull(),
 }, (table) => [
 	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.id],
+		name: "user_roles_user_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
 		columns: [table.roleId],
 		foreignColumns: [roles.id],
 		name: "user_roles_role_id_fkey"
@@ -1024,7 +1037,12 @@ export const auditLogs = pgTable("audit_logs", {
 	action: varchar({ length: 100 }).notNull(),
 	tableName: varchar("table_name", { length: 100 }),
 	recordId: integer("record_id"),
+	oldValues: jsonb("old_values"),
+	newValues: jsonb("new_values"),
 	details: text(),
+	ipAddress: varchar("ip_address", { length: 45 }),
+	userAgent: text("user_agent"),
+	severity: varchar({ length: 20 }).default('info'), // info, warning, critical
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
 }, (table) => [
@@ -1504,4 +1522,241 @@ export const aiReports = pgTable("ai_reports", {
 		foreignColumns: [users.id],
 		name: "ai_reports_generated_by_fkey"
 	}).onDelete("set null"),
+]);
+
+export const treasurySessions = pgTable("treasury_sessions", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	userId: integer("user_id").notNull(),
+	openingBalance: numeric("opening_balance", { precision: 15, scale: 2 }).default('0'),
+	expectedClosingBalance: numeric("expected_closing_balance", { precision: 15, scale: 2 }).default('0'),
+	actualClosingBalance: numeric("actual_closing_balance", { precision: 15, scale: 2 }),
+	difference: numeric({ precision: 15, scale: 2 }).default('0'),
+	status: varchar({ length: 20 }).default('open').notNull(), // open, closed, pending_review
+	currency: varchar({ length: 10 }).default('EGP').notNull(),
+	notes: text(),
+	openedAt: timestamp("opened_at", { mode: 'string' }).defaultNow(),
+	closedAt: timestamp("closed_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "treasury_sessions_company_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.id],
+		name: "treasury_sessions_user_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const treasuryTransfers = pgTable("treasury_transfers", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	fromUserId: integer("from_user_id"),
+	toUserId: integer("to_user_id"),
+	fromAccountId: integer("from_account_id"),
+	toAccountId: integer("to_account_id"),
+	amount: numeric({ precision: 15, scale: 2 }).notNull(),
+	currency: varchar({ length: 10 }).default('EGP').notNull(),
+	conversionRate: numeric("conversion_rate", { precision: 15, scale: 6 }).default('1'),
+	type: varchar({ length: 30 }).notNull(), // vault_to_user, user_to_vault, user_to_user, etc.
+	status: varchar({ length: 20 }).default('pending').notNull(), // pending, completed, rejected
+	reference: varchar({ length: 100 }),
+	notes: text(),
+	createdBy: integer("created_by"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "treasury_transfers_company_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.fromUserId],
+		foreignColumns: [users.id],
+		name: "treasury_transfers_from_user_id_fkey"
+	}),
+	foreignKey({
+		columns: [table.toUserId],
+		foreignColumns: [users.id],
+		name: "treasury_transfers_to_user_id_fkey"
+	}),
+	foreignKey({
+		columns: [table.createdBy],
+		foreignColumns: [users.id],
+		name: "treasury_transfers_created_by_fkey"
+	}),
+]);
+
+export const machines = pgTable("machines", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	name: varchar({ length: 255 }).notNull(),
+	code: varchar({ length: 100 }),
+	type: varchar({ length: 100 }), // CNC, Assembly, etc.
+	status: varchar({ length: 50 }).default('operational'), // operational, idle, maintenance, broken
+	healthScore: integer("health_score").default(100),
+	lastMaintenanceAt: timestamp("last_maintenance_at", { mode: 'string' }),
+	nextMaintenanceAt: timestamp("next_maintenance_at", { mode: 'string' }),
+	notes: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "machines_company_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const billOfMaterials = pgTable("bill_of_materials", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	finishedProductId: integer("finished_product_id").notNull(),
+	version: varchar({ length: 20 }).default('1.0'),
+	isActive: boolean("is_active").default(true),
+	notes: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "bom_company_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.finishedProductId],
+		foreignColumns: [products.id],
+		name: "bom_finished_product_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const bomItems = pgTable("bom_items", {
+	id: serial().primaryKey().notNull(),
+	bomId: integer("bom_id").notNull(),
+	rawMaterialId: integer("raw_material_id").notNull(),
+	quantity: numeric({ precision: 12, scale: 4 }).notNull(),
+	unit: varchar({ length: 50 }),
+}, (table) => [
+	foreignKey({
+		columns: [table.bomId],
+		foreignColumns: [billOfMaterials.id],
+		name: "bom_items_bom_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.rawMaterialId],
+		foreignColumns: [products.id],
+		name: "bom_items_raw_material_id_fkey"
+	}),
+]);
+
+export const productionOrders = pgTable("production_orders", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	orderNumber: varchar("order_number", { length: 50 }).notNull(),
+	productId: integer("product_id").notNull(),
+	bomId: integer("bom_id"),
+	quantity: numeric({ precision: 12, scale: 2 }).notNull(),
+	startDate: date("start_date"),
+	expectedEndDate: date("expected_end_date"),
+	actualEndDate: date("actual_end_date"),
+	status: varchar({ length: 30 }).default('planned'), // planned, in_progress, completed, cancelled
+	priority: varchar({ length: 20 }).default('medium'),
+	notes: text(),
+	createdBy: integer("created_by"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "production_orders_company_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.productId],
+		foreignColumns: [products.id],
+		name: "production_orders_product_id_fkey"
+	}),
+	foreignKey({
+		columns: [table.bomId],
+		foreignColumns: [billOfMaterials.id],
+		name: "production_orders_bom_id_fkey"
+	}),
+]);
+
+export const productionStages = pgTable("production_stages", {
+	id: serial().primaryKey().notNull(),
+	productionOrderId: integer("production_order_id").notNull(),
+	name: varchar({ length: 100 }).notNull(),
+	sequence: integer().notNull(),
+	machineId: integer("machine_id"),
+	status: varchar({ length: 30 }).default('pending'), // pending, active, completed
+	startedAt: timestamp("started_at", { mode: 'string' }),
+	completedAt: timestamp("completed_at", { mode: 'string' }),
+	operatorId: integer("operator_id"),
+	notes: text(),
+}, (table) => [
+	foreignKey({
+		columns: [table.productionOrderId],
+		foreignColumns: [productionOrders.id],
+		name: "production_stages_order_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.machineId],
+		foreignColumns: [machines.id],
+		name: "production_stages_machine_id_fkey"
+	}),
+	foreignKey({
+		columns: [table.operatorId],
+		foreignColumns: [users.id],
+		name: "production_stages_operator_id_fkey"
+	}),
+]);
+
+export const qualityLogs = pgTable("quality_logs", {
+	id: serial().primaryKey().notNull(),
+	companyId: integer("company_id").notNull(),
+	productionOrderId: integer("production_order_id"),
+	productionStageId: integer("production_stage_id"),
+	checkerId: integer("checker_id"),
+	status: varchar({ length: 20 }).notNull(), // pass, fail, rework
+	findings: text(),
+	measurements: jsonb(),
+	checkedAt: timestamp("checked_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.companyId],
+		foreignColumns: [companies.id],
+		name: "quality_logs_company_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.productionOrderId],
+		foreignColumns: [productionOrders.id],
+		name: "quality_logs_production_order_id_fkey"
+	}),
+	foreignKey({
+		columns: [table.checkerId],
+		foreignColumns: [users.id],
+		name: "quality_logs_checker_id_fkey"
+	}),
+]);
+
+export const maintenanceLogs = pgTable("maintenance_logs", {
+	id: serial().primaryKey().notNull(),
+	machineId: integer("machine_id").notNull(),
+	type: varchar({ length: 50 }).notNull(), // routine, repair, emergency
+	description: text().notNull(),
+	cost: numeric({ precision: 12, scale: 2 }),
+	technicianName: varchar({ length: 255 }),
+	performedAt: timestamp("performed_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.machineId],
+		foreignColumns: [machines.id],
+		name: "maintenance_logs_machine_id_fkey"
+	}).onDelete("cascade"),
 ]);

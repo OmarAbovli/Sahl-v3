@@ -2,8 +2,10 @@
 
 import { db } from "@/db"
 import { fixedAssets, journalEntries, journalLines, accounts } from "@/db/schema"
-import { eq, and, sql, lte } from "drizzle-orm"
+import { eq, and, sql, lte, desc } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { logActivity } from "./audit"
+import { auditLogs } from "@/db/schema"
 
 /**
  * Fetch all fixed assets for a company
@@ -34,6 +36,13 @@ export async function createFixedAsset(data: {
     usefulLifeYears: number
     depreciationMethod: "straight_line" | "declining_balance"
     residualValue?: number
+    serialNumber?: string
+    location?: string
+    department?: string
+    vendor?: string
+    condition?: string
+    insuranceDetails?: string
+    userId?: number
 }) {
     try {
         const residualValue = data.residualValue || 0
@@ -58,8 +67,26 @@ export async function createFixedAsset(data: {
             bookValue: purchaseCost.toString(), // Initial book value = purchase cost
             accumulatedDepreciation: "0",
             lastDepreciationDate: null,
+            serialNumber: data.serialNumber || null,
+            location: data.location || null,
+            department: data.department || null,
+            vendor: data.vendor || null,
+            condition: data.condition || 'good',
+            insuranceDetails: data.insuranceDetails || null,
             isActive: true
         }).returning()
+
+        if (newAsset) {
+            await logActivity({
+                companyId: data.companyId,
+                userId: data.userId,
+                action: "CREATE_FIXED_ASSET",
+                tableName: "fixed_assets",
+                recordId: newAsset.id,
+                newValues: newAsset,
+                details: `Asset registered: ${newAsset.assetName} (${newAsset.assetCode})`
+            })
+        }
 
         revalidatePath("/company-admin/fixed-assets")
         return { success: true, data: newAsset }
@@ -79,12 +106,34 @@ export async function updateFixedAsset(id: number, data: Partial<{
     assetName: string
     category: string
     isActive: boolean
-}>) {
+    location: string
+    department: string
+    vendor: string
+    condition: string
+    insuranceDetails: string
+}>, userId?: number) {
     try {
+        const oldAsset = await db.query.fixedAssets.findFirst({
+            where: eq(fixedAssets.id, id)
+        })
+
         const [updated] = await db.update(fixedAssets)
             .set(data)
             .where(eq(fixedAssets.id, id))
             .returning()
+
+        if (updated) {
+            await logActivity({
+                companyId: updated.companyId,
+                userId,
+                action: "UPDATE_FIXED_ASSET",
+                tableName: "fixed_assets",
+                recordId: updated.id,
+                oldValues: oldAsset,
+                newValues: updated,
+                details: `Asset updated: ${updated.assetName}`
+            })
+        }
 
         revalidatePath("/company-admin/fixed-assets")
         return { success: true, data: updated }
@@ -323,5 +372,27 @@ export async function getAssetDepreciationSchedule(assetId: number) {
     } catch (error) {
         console.error("Depreciation schedule error:", error)
         return { success: false, error: "Failed to generate schedule" }
+    }
+}
+
+/**
+ * Get audit trail for a specific asset
+ */
+export async function getAssetAuditTrail(assetId: number) {
+    try {
+        const data = await db.query.auditLogs.findMany({
+            where: and(
+                eq(auditLogs.tableName, "fixed_assets"),
+                eq(auditLogs.recordId, assetId)
+            ),
+            orderBy: [desc(auditLogs.createdAt)],
+            with: {
+                user: true
+            }
+        })
+        return { success: true, data }
+    } catch (error) {
+        console.error("Asset audit trail error:", error)
+        return { success: false, error: "Failed to fetch audit trail" }
     }
 }

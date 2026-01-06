@@ -107,7 +107,7 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
             <TrendingUp className="w-12 h-12 text-emerald-500" />
           </div>
           <div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('total_amount' as any || 'Total Outstanding')}</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('total_amount')}</p>
             <h3 className="text-3xl font-light text-white mt-1">{`${t('currency_symbol')} ${stats.totalOutstanding.toLocaleString()}`}</h3>
           </div>
         </div>
@@ -116,7 +116,7 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
             <ArrowUpRight className="w-12 h-12 text-blue-500" />
           </div>
           <div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('paid_amount' as any || 'Total Received')}</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('paid_amount')}</p>
             <h3 className="text-3xl font-light text-white mt-1">{`${t('currency_symbol')} ${stats.totalReceived.toLocaleString()}`}</h3>
           </div>
         </div>
@@ -147,7 +147,7 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
             <div className="relative w-64 hidden md:block">
               <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500", isRTL ? "right-3" : "left-3")} />
               <Input
-                placeholder={t('search_invoices' as any)}
+                placeholder={t('search')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={cn("bg-slate-900/50 border-slate-800 text-xs h-9", isRTL ? "pr-9" : "pl-9")}
@@ -155,7 +155,7 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
             </div>
             {canManage && (
               <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-none" onClick={() => setShowInvoiceDialog(true)}>
-                <Plus className="h-4 w-4 mr-1" /> {t('add_invoice' as any || 'New Invoice')}
+                <Plus className="h-4 w-4 mr-1" /> {t('add_invoice')}
               </Button>
             )}
           </div>
@@ -168,8 +168,8 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
                   <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500">{t('invoice_number')}</TableHead>
                   <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500">{t('customer')}</TableHead>
                   <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500">{t('date')}</TableHead>
-                  <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500 text-right">{t('total_amount' as any || 'Total')}</TableHead>
-                  <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500 text-right">{t('paid_amount' as any || 'Paid')}</TableHead>
+                  <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500 text-right">{t('total_amount')}</TableHead>
+                  <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500 text-right">{t('paid_amount')}</TableHead>
                   <TableHead className="px-6 h-12 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500 text-right">{t('status')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -179,7 +179,7 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
                     <TableRow key={i} className="border-slate-800"><TableCell colSpan={6}><div className="h-10 w-full bg-slate-900/50 animate-pulse rounded" /></TableCell></TableRow>
                   ))
                 ) : filteredInvoices.length === 0 ? (
-                  <TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="text-center py-24 text-slate-600 italic">No invoices found.</TableCell></TableRow>
+                  <TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="text-center py-24 text-slate-600 italic">{t('no_data')}</TableCell></TableRow>
                 ) : (
                   filteredInvoices.map(inv => (
                     <TableRow key={inv.id} className="border-slate-800 hover:bg-slate-900/30 transition-colors group">
@@ -233,12 +233,12 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
             </div>
             <div>
               <CardTitle className="text-xl font-light text-white">{t('payments')}</CardTitle>
-              <CardDescription className="text-slate-500 text-xs uppercase tracking-widest">{t('payment_history' as any)}</CardDescription>
+              <CardDescription className="text-slate-500 text-xs uppercase tracking-widest">{t('history')}</CardDescription>
             </div>
           </div>
           {canManage && (
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-none" onClick={() => setShowPaymentDialog(true)}>
-              <ArrowDownLeft className="h-4 w-4 mr-1" /> {t('record_payment' as any)}
+              <ArrowDownLeft className="h-4 w-4 mr-1" /> {t('record_payment')}
             </Button>
           )}
         </CardHeader>
@@ -256,7 +256,7 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
               </TableHeader>
               <TableBody>
                 {loading ? null : payments.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-12 text-slate-600 italic">No payments recorded.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-12 text-slate-600 italic">{t('no_data')}</TableCell></TableRow>
                 ) : (
                   payments.map(pay => (
                     <TableRow key={pay.id} className="border-slate-800 hover:bg-slate-900/20 transition-all group">
@@ -291,19 +291,41 @@ export function AccountsReceivableManagement({ canManage, canView, user }: Accou
         <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2 font-light text-amber-500 uppercase tracking-widest text-xs">
-              <TrendingUp className="h-4 w-4" /> System Intelligence
+              <TrendingUp className="h-4 w-4" /> {t('system_intelligence')}
             </div>
-            <DialogTitle className="text-2xl font-light">{t('add_invoice' as any || 'Create New Invoice')}</DialogTitle>
+            <DialogTitle className="text-2xl font-light">{t('add_invoice')}</DialogTitle>
           </DialogHeader>
           <div className="py-10 text-center space-y-4">
             <div className="h-12 w-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-amber-500">
               <FileText className="h-6 w-6" />
             </div>
             <p className="text-slate-400 text-sm leading-relaxed max-w-[280px] mx-auto">
-              Sales Invoice operations are integrated within the <span className="text-white font-bold">Sales & Operations</span> module for seamless stock handling.
+              {t('sales_invoice_integration_desc')}
             </p>
             <Button className="bg-amber-600 hover:bg-amber-700 text-white rounded-none" onClick={() => setShowInvoiceDialog(false)}>
-              Understood
+              {t('confirm')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2 font-light text-emerald-500 uppercase tracking-widest text-xs">
+              <History className="h-4 w-4" /> {t('treasury')}
+            </div>
+            <DialogTitle className="text-2xl font-light">{t('payments')}</DialogTitle>
+          </DialogHeader>
+          <div className="py-10 text-center space-y-4">
+            <div className="h-12 w-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-emerald-500">
+              <DollarSign className="h-6 w-6" />
+            </div>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-[280px] mx-auto">
+              {t('treasury_integration_desc')}
+            </p>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-none" onClick={() => setShowPaymentDialog(false)}>
+              {t('confirm')}
             </Button>
           </div>
         </DialogContent>

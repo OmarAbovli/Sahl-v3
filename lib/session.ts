@@ -54,7 +54,22 @@ export async function getSession(): Promise<User | null> {
         eq(users.id, sessionData.userId),
         eq(users.isActive, true),
         or(isNull(users.expiresAt), gt(users.expiresAt, sql`NOW()`))
-      )
+      ),
+      with: {
+        userRoles: {
+          with: {
+            role: {
+              with: {
+                rolePermissions: {
+                  with: {
+                    permission: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     })
 
     if (!user) {
@@ -62,12 +77,24 @@ export async function getSession(): Promise<User | null> {
       return null
     }
 
-    // Return user with legacy property aliases for old API routes
+    // Merge Role-based permissions into the flat permissions object
+    const permissionsMap = { ...(user.permissions as Record<string, boolean> || {}) }
+
+    user.userRoles?.forEach((ur: any) => {
+      ur.role?.rolePermissions?.forEach((rp: any) => {
+        if (rp.permission?.name) {
+          permissionsMap[rp.permission.name] = true
+        }
+      })
+    })
+
+    // Return user with legacy property aliases and merged permissions
     return {
       ...user,
+      permissions: permissionsMap,
       user_id: user.id,
       company_id: user.companyId
-    } as User
+    } as any
   } catch (error) {
     console.error("Session error:", error)
     return null

@@ -100,7 +100,7 @@ export function AccountsPayableManagement({ canManage, canView, user }: Accounts
             <TrendingDown className="w-12 h-12 text-rose-500" />
           </div>
           <div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('balance_due' as any || 'Total Payable')}</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('balance_due')}</p>
             <h3 className="text-3xl font-light text-white mt-1">{t('currency_symbol')} {stats.totalToPay.toLocaleString()}</h3>
           </div>
         </div>
@@ -109,7 +109,7 @@ export function AccountsPayableManagement({ canManage, canView, user }: Accounts
             <ArrowRightLeft className="w-12 h-12 text-blue-500" />
           </div>
           <div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('paid_amount' as any || 'Total Paid')}</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t('paid_amount')}</p>
             <h3 className="text-3xl font-light text-white mt-1">{t('currency_symbol')} {stats.totalPaid.toLocaleString()}</h3>
           </div>
         </div>
@@ -137,7 +137,7 @@ export function AccountsPayableManagement({ canManage, canView, user }: Accounts
           </div>
           {canManage && (
             <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-none" onClick={() => setShowInvoiceDialog(true)}>
-              <Plus className="h-4 w-4 mr-1" /> {t('add_invoice' as any)}
+              <Plus className="h-4 w-4 mr-1" /> {t('add_invoice')}
             </Button>
           )}
         </CardHeader>
@@ -224,19 +224,19 @@ export function AccountsPayableManagement({ canManage, canView, user }: Accounts
         <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2 font-light text-rose-500 uppercase tracking-widest text-xs">
-              <ShoppingCart className="h-4 w-4" /> Purchasing Intelligence
+              <ShoppingCart className="h-4 w-4" /> {t('purchasing_intelligence')}
             </div>
-            <DialogTitle className="text-2xl font-light">{t('add_invoice' as any || 'Record Supplier Invoice')}</DialogTitle>
+            <DialogTitle className="text-2xl font-light">{t('add_invoice')}</DialogTitle>
           </DialogHeader>
           <div className="py-10 text-center space-y-4">
             <div className="h-12 w-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-rose-500">
               <FileText className="h-6 w-6" />
             </div>
             <p className="text-slate-400 text-sm leading-relaxed max-w-[280px] mx-auto">
-              Supplier invoices are generated during the <span className="text-white font-bold">Purchasing Workflow</span> to ensure direct linkage with Received Goods.
+              {t('supplier_invoice_workflow_desc')}
             </p>
             <Button className="bg-slate-800 hover:bg-slate-700 text-white rounded-none" onClick={() => setShowInvoiceDialog(false)}>
-              Confirm
+              {t('confirm')}
             </Button>
           </div>
         </DialogContent>

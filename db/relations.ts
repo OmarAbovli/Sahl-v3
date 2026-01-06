@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { companies, users, warehouses, employees, invoices, inventory, activityLogs, supportTickets, debtPayments, debts, chartOfAccounts, journalEntries, journalEntryLines, aiInsights, customers, salesInvoices, suppliers, purchaseInvoices, products, purchaseOrders, salesOrders, bankAccounts, bankTransactions, fixedAssets, taxSettings, biometricDevices, accounts, journalLines, taxRules, customerPayments, supplierPayments, cashBankAccounts, inventoryMovements, cashBankTransactions, assetDepreciation, taxes, invoiceTaxes, roles, rolePermissions, permissions, userRoles, approvals, periodLocks, financialReports, purchaseInvoiceStatusHistory, salesInvoiceStatusHistory, biometricAttendance, salesInvoiceLines, purchaseInvoiceLines, chatMessages, costCenters, leads, deals, activities, attendanceRecords, leaveRequests, payrollRuns, payrollRunDetails } from "./schema";
+import { companies, users, warehouses, employees, invoices, inventory, activityLogs, supportTickets, debtPayments, debts, chartOfAccounts, journalEntries, journalEntryLines, aiInsights, customers, salesInvoices, suppliers, purchaseInvoices, products, purchaseOrders, salesOrders, bankAccounts, bankTransactions, fixedAssets, taxSettings, biometricDevices, accounts, journalLines, taxRules, customerPayments, supplierPayments, cashBankAccounts, inventoryMovements, cashBankTransactions, assetDepreciation, taxes, invoiceTaxes, roles, rolePermissions, permissions, userRoles, auditLogs, approvals, periodLocks, financialReports, purchaseInvoiceStatusHistory, salesInvoiceStatusHistory, biometricAttendance, salesInvoiceLines, purchaseInvoiceLines, purchaseOrderLines, chatMessages, costCenters, leads, deals, activities, attendanceRecords, leaveRequests, payrollRuns, payrollRunDetails, treasurySessions, treasuryTransfers, machines, billOfMaterials, bomItems, productionOrders, productionStages, qualityLogs, maintenanceLogs } from "./schema";
 
 export const usersRelations = relations(users, ({ one, many }) => ({
 	company: one(companies, {
@@ -22,6 +22,11 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 	purchaseInvoiceStatusHistories: many(purchaseInvoiceStatusHistory),
 	salesInvoiceStatusHistories: many(salesInvoiceStatusHistory),
 	chatMessages: many(chatMessages),
+	userRoles: many(userRoles),
+	productionStages: many(productionStages),
+	qualityLogs: many(qualityLogs),
+	productionOrders: many(productionOrders),
+	auditLogs: many(auditLogs),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -56,6 +61,11 @@ export const companiesRelations = relations(companies, ({ many }) => ({
 	attendanceRecords: many(attendanceRecords),
 	leaveRequests: many(leaveRequests),
 	payrollRuns: many(payrollRuns),
+	machines: many(machines),
+	productionOrders: many(productionOrders),
+	qualityLogs: many(qualityLogs),
+	billOfMaterials: many(billOfMaterials),
+	auditLogs: many(auditLogs),
 }));
 
 export const warehousesRelations = relations(warehouses, ({ one, many }) => ({
@@ -247,7 +257,7 @@ export const salesInvoicesRelations = relations(salesInvoices, ({ one, many }) =
 	}),
 	customerPayments: many(customerPayments),
 	salesInvoiceStatusHistories: many(salesInvoiceStatusHistory),
-	salesInvoiceLines: many(salesInvoiceLines),
+	lines: many(salesInvoiceLines),
 }));
 
 export const suppliersRelations = relations(suppliers, ({ one, many }) => ({
@@ -275,7 +285,7 @@ export const purchaseInvoicesRelations = relations(purchaseInvoices, ({ one, man
 	}),
 	supplierPayments: many(supplierPayments),
 	purchaseInvoiceStatusHistories: many(purchaseInvoiceStatusHistory),
-	purchaseInvoiceLines: many(purchaseInvoiceLines),
+	lines: many(purchaseInvoiceLines),
 }));
 
 export const productsRelations = relations(products, ({ one, many }) => ({
@@ -284,9 +294,12 @@ export const productsRelations = relations(products, ({ one, many }) => ({
 		references: [companies.id]
 	}),
 	inventoryMovements: many(inventoryMovements),
+	billOfMaterials: many(billOfMaterials),
+	bomItems: many(bomItems),
+	productionOrders: many(productionOrders),
 }));
 
-export const purchaseOrdersRelations = relations(purchaseOrders, ({ one }) => ({
+export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
 	company: one(companies, {
 		fields: [purchaseOrders.companyId],
 		references: [companies.id]
@@ -299,6 +312,7 @@ export const purchaseOrdersRelations = relations(purchaseOrders, ({ one }) => ({
 		fields: [purchaseOrders.createdBy],
 		references: [users.id]
 	}),
+	lines: many(purchaseOrderLines),
 }));
 
 export const salesOrdersRelations = relations(salesOrders, ({ one }) => ({
@@ -510,9 +524,24 @@ export const permissionsRelations = relations(permissions, ({ many }) => ({
 }));
 
 export const userRolesRelations = relations(userRoles, ({ one }) => ({
+	user: one(users, {
+		fields: [userRoles.userId],
+		references: [users.id]
+	}),
 	role: one(roles, {
 		fields: [userRoles.roleId],
 		references: [roles.id]
+	}),
+}));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+	company: one(companies, {
+		fields: [auditLogs.companyId],
+		references: [companies.id]
+	}),
+	user: one(users, {
+		fields: [auditLogs.userId],
+		references: [users.id]
 	}),
 }));
 
@@ -579,7 +608,7 @@ export const salesInvoiceLinesRelations = relations(salesInvoiceLines, ({ one })
 		fields: [salesInvoiceLines.salesInvoiceId],
 		references: [salesInvoices.id]
 	}),
-	inventory: one(inventory, {
+	inventoryItem: one(inventory, {
 		fields: [salesInvoiceLines.inventoryItemId],
 		references: [inventory.id]
 	}),
@@ -590,7 +619,7 @@ export const purchaseInvoiceLinesRelations = relations(purchaseInvoiceLines, ({ 
 		fields: [purchaseInvoiceLines.purchaseInvoiceId],
 		references: [purchaseInvoices.id]
 	}),
-	inventory: one(inventory, {
+	inventoryItem: one(inventory, {
 		fields: [purchaseInvoiceLines.inventoryItemId],
 		references: [inventory.id]
 	}),
@@ -705,5 +734,145 @@ export const payrollRunDetailsRelations = relations(payrollRunDetails, ({ one })
 	employee: one(employees, {
 		fields: [payrollRunDetails.employeeId],
 		references: [employees.id]
+	}),
+}));
+
+export const purchaseOrderLinesRelations = relations(purchaseOrderLines, ({ one }) => ({
+	purchaseOrder: one(purchaseOrders, {
+		fields: [purchaseOrderLines.purchaseOrderId],
+		references: [purchaseOrders.id]
+	}),
+	inventoryItem: one(inventory, {
+		fields: [purchaseOrderLines.inventoryItemId],
+		references: [inventory.id]
+	}),
+}));
+
+export const treasurySessionsRelations = relations(treasurySessions, ({ one }) => ({
+	company: one(companies, {
+		fields: [treasurySessions.companyId],
+		references: [companies.id]
+	}),
+	user: one(users, {
+		fields: [treasurySessions.userId],
+		references: [users.id]
+	}),
+}));
+
+export const treasuryTransfersRelations = relations(treasuryTransfers, ({ one }) => ({
+	company: one(companies, {
+		fields: [treasuryTransfers.companyId],
+		references: [companies.id]
+	}),
+	fromUser: one(users, {
+		fields: [treasuryTransfers.fromUserId],
+		references: [users.id],
+		relationName: "treasuryTransfers_fromUserId_users_id"
+	}),
+	toUser: one(users, {
+		fields: [treasuryTransfers.toUserId],
+		references: [users.id],
+		relationName: "treasuryTransfers_toUserId_users_id"
+	}),
+	creator: one(users, {
+		fields: [treasuryTransfers.createdBy],
+		references: [users.id],
+		relationName: "treasuryTransfers_createdBy_users_id"
+	}),
+}));
+
+export const machinesRelations = relations(machines, ({ one, many }) => ({
+	company: one(companies, {
+		fields: [machines.companyId],
+		references: [companies.id]
+	}),
+	productionStages: many(productionStages),
+	maintenanceLogs: many(maintenanceLogs),
+}));
+
+export const billOfMaterialsRelations = relations(billOfMaterials, ({ one, many }) => ({
+	company: one(companies, {
+		fields: [billOfMaterials.companyId],
+		references: [companies.id]
+	}),
+	finishedProduct: one(products, {
+		fields: [billOfMaterials.finishedProductId],
+		references: [products.id]
+	}),
+	items: many(bomItems),
+	productionOrders: many(productionOrders),
+}));
+
+export const bomItemsRelations = relations(bomItems, ({ one }) => ({
+	bom: one(billOfMaterials, {
+		fields: [bomItems.bomId],
+		references: [billOfMaterials.id]
+	}),
+	rawMaterial: one(products, {
+		fields: [bomItems.rawMaterialId],
+		references: [products.id]
+	}),
+}));
+
+export const productionOrdersRelations = relations(productionOrders, ({ one, many }) => ({
+	company: one(companies, {
+		fields: [productionOrders.companyId],
+		references: [companies.id]
+	}),
+	product: one(products, {
+		fields: [productionOrders.productId],
+		references: [products.id]
+	}),
+	bom: one(billOfMaterials, {
+		fields: [productionOrders.bomId],
+		references: [billOfMaterials.id]
+	}),
+	stages: many(productionStages),
+	qualityLogs: many(qualityLogs),
+	creator: one(users, {
+		fields: [productionOrders.createdBy],
+		references: [users.id]
+	}),
+}));
+
+export const productionStagesRelations = relations(productionStages, ({ one, many }) => ({
+	productionOrder: one(productionOrders, {
+		fields: [productionStages.productionOrderId],
+		references: [productionOrders.id]
+	}),
+	machine: one(machines, {
+		fields: [productionStages.machineId],
+		references: [machines.id]
+	}),
+	operator: one(users, {
+		fields: [productionStages.operatorId],
+		references: [users.id]
+	}),
+	qualityLogs: many(qualityLogs),
+}));
+
+export const qualityLogsRelations = relations(qualityLogs, ({ one }) => ({
+	company: one(companies, {
+		fields: [qualityLogs.companyId],
+		references: [companies.id]
+	}),
+	productionOrder: one(productionOrders, {
+		fields: [qualityLogs.productionOrderId],
+		references: [productionOrders.id]
+	}),
+	productionStage: one(productionStages, {
+		fields: [qualityLogs.productionStageId],
+		references: [productionStages.id]
+	}),
+	checker: one(users, {
+		fields: [qualityLogs.checkerId],
+		references: [users.id]
+	}),
+}));
+
+export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one }) => ({
+	machine: one(machines, {
+		fields: [maintenanceLogs.machineId],
+		references: [machines.id]
 	}),
 }));

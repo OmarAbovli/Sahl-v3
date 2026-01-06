@@ -55,7 +55,8 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { DataExportModal } from "@/components/data-export-modal"
 
-import { getPurchaseOrders, getSuppliers, getInventoryItems, createPurchaseOrder, updatePOStatus, deletePurchaseOrder } from "@/actions/purchasing"
+import { getPurchaseOrders, getInventoryItems, createPurchaseOrder, updatePOStatus, deletePurchaseOrder } from "@/actions/purchasing"
+import { createSupplier, getSuppliers } from "@/actions/suppliers"
 
 interface PurchasingManagementProps {
   user: any
@@ -83,6 +84,16 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
     expectedDate: "",
     status: "pending",
     lines: [] as { inventoryItemId: string; quantity: number; unitPrice: number; description: string }[]
+  })
+
+  // Supplier Form
+  const [isSupplierOpen, setIsSupplierOpen] = useState(false)
+  const [newSupplier, setNewSupplier] = useState({
+    name: "",
+    supplierCode: "",
+    email: "",
+    phone: "",
+    address: ""
   })
 
   useEffect(() => {
@@ -134,7 +145,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
       })
 
       if (res.success) {
-        toast.success("Purchase Order created successfully")
+        toast.success(res.message || "Purchase Order created successfully")
         setIsCreateOpen(false)
         setNewOrder({
           supplierId: "",
@@ -144,6 +155,35 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
           lines: []
         })
         loadData()
+      } else {
+        toast.error(res.error)
+      }
+    })
+  }
+
+  const handleCreateSupplier = async () => {
+    if (!newSupplier.name || !newSupplier.supplierCode) {
+      toast.error("Name and Code are required")
+      return
+    }
+
+    startTransition(async () => {
+      const res = await createSupplier({
+        companyId: user.companyId,
+        ...newSupplier
+      })
+
+      if (res.success) {
+        toast.success("Supplier added")
+        setIsSupplierOpen(false)
+        setNewSupplier({ name: "", supplierCode: "", email: "", phone: "", address: "" })
+
+        // Refresh supplier list and select the new one
+        const suppRes = await getSuppliers(user.companyId)
+        if (suppRes.success) {
+          setSuppliers(suppRes.data)
+          setNewOrder(prev => ({ ...prev, supplierId: res.data.id.toString() }))
+        }
       } else {
         toast.error(res.error)
       }
@@ -219,7 +259,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
             <Truck className="w-12 h-12 text-blue-500" />
           </div>
           <div>
-            <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">Active Orders</p>
+            <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">{t('active_orders')}</p>
             <h3 className="text-3xl font-light text-white mt-1">
               {orders.filter(o => o.status === 'pending').length}
             </h3>
@@ -231,7 +271,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
             <Package className="w-12 h-12 text-emerald-500" />
           </div>
           <div>
-            <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">Received This Month</p>
+            <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">{t('received_this_month')}</p>
             <h3 className="text-3xl font-light text-white mt-1">
               {orders.filter(o => o.status === 'received').length}
             </h3>
@@ -242,10 +282,10 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
       {/* Actions Bar */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-950/50 p-4 border border-slate-800 backdrop-blur-xl">
         <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500", isRTL ? "right-3" : "left-3")} />
           <Input
-            placeholder="Search orders..."
-            className="pl-9 bg-slate-900/50 border-slate-800 focus:border-amber-500/50"
+            placeholder={t('search_placeholder')}
+            className={cn("bg-slate-900/50 border-slate-800 focus:border-amber-500/50", isRTL ? "pr-9" : "pl-9")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -258,7 +298,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
           />
           {canManage && (
             <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" /> New Purchase Order
+              <Plus className="h-4 w-4 mr-2" /> {t('new_purchase_order')}
             </Button>
           )}
         </div>
@@ -270,13 +310,13 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-900/80 text-xs uppercase font-medium text-slate-400 sticky top-0 backdrop-blur-md z-10">
               <tr>
-                <th className="px-6 py-4">PO #</th>
-                <th className="px-6 py-4">Supplier</th>
-                <th className="px-6 py-4">Ordered</th>
-                <th className="px-6 py-4">Expected</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Amount</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4">{t('po_number')}</th>
+                <th className="px-6 py-4">{t('supplier')}</th>
+                <th className="px-6 py-4">{t('ordered')}</th>
+                <th className="px-6 py-4">{t('expected')}</th>
+                <th className="px-6 py-4">{t('status')}</th>
+                <th className="px-6 py-4 text-right">{t('amount')}</th>
+                <th className="px-6 py-4 text-right">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -363,10 +403,15 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
           <div className="space-y-6 mt-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Supplier</Label>
-                <Select onValueChange={(v) => setNewOrder({ ...newOrder, supplierId: v })}>
+                <div className="flex items-center justify-between">
+                  <Label>{t('supplier')}</Label>
+                  <Button variant="link" size="sm" className="h-auto p-0 text-amber-500" onClick={() => setIsSupplierOpen(true)}>
+                    + {t('new_supplier')}
+                  </Button>
+                </div>
+                <Select value={newOrder.supplierId} onValueChange={(v) => setNewOrder({ ...newOrder, supplierId: v })}>
                   <SelectTrigger className="bg-slate-900 border-slate-800">
-                    <SelectValue placeholder="Select Supplier" />
+                    <SelectValue placeholder={t('select_supplier')} />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
                     {suppliers.map(s => (
@@ -376,19 +421,19 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('status')}</Label>
                 <Select defaultValue="pending" onValueChange={(v) => setNewOrder({ ...newOrder, status: v })}>
                   <SelectTrigger className="bg-slate-900 border-slate-800">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('status')} />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="received">Received</SelectItem>
+                    <SelectItem value="pending">{t('pending')}</SelectItem>
+                    <SelectItem value="received">{t('received')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Order Date</Label>
+                <Label>{t('date')}</Label>
                 <Input
                   type="date"
                   className="bg-slate-900 border-slate-800"
@@ -397,7 +442,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
                 />
               </div>
               <div className="space-y-2">
-                <Label>Expected Date</Label>
+                <Label>{t('expected')} {t('date')}</Label>
                 <Input
                   type="date"
                   className="bg-slate-900 border-slate-800"
@@ -410,9 +455,9 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
             {/* Line Items */}
             <div className="space-y-4 pt-4 border-t border-slate-800">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-slate-300">Order Items</h3>
+                <h3 className="text-sm font-medium text-slate-300">{t('order')} {t('items')}</h3>
                 <Button variant="ghost" size="sm" onClick={addLineItem} className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10">
-                  <Plus className="h-3 w-3 mr-1" /> Add Item
+                  <Plus className="h-3 w-3 mr-1" /> {t('add')} {t('item')}
                 </Button>
               </div>
 
@@ -422,7 +467,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
                     <Label className="text-xs text-slate-500">Item</Label>
                     <Select value={line.inventoryItemId} onValueChange={(v) => updateLineItem(idx, 'inventoryItemId', v)}>
                       <SelectTrigger className="h-8 text-xs bg-slate-900 border-slate-800">
-                        <SelectValue placeholder="Select Item" />
+                        <SelectValue placeholder={t('select_item')} />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         {inventoryItems.map(item => (
@@ -434,7 +479,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
                     </Select>
                   </div>
                   <div className="col-span-2 space-y-1">
-                    <Label className="text-xs text-slate-500">Qty</Label>
+                    <Label className="text-xs text-slate-500">{t('quantity_short')}</Label>
                     <Input
                       type="number"
                       className="h-8 text-xs bg-slate-900 border-slate-800"
@@ -444,7 +489,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
                     />
                   </div>
                   <div className="col-span-3 space-y-1">
-                    <Label className="text-xs text-slate-500">Cost</Label>
+                    <Label className="text-xs text-slate-500">{t('cost')}</Label>
                     <Input
                       type="number"
                       className="h-8 text-xs bg-slate-900 border-slate-800"
@@ -476,7 +521,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
             </div>
 
             <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white" onClick={handleCreateOrder} disabled={isPending}>
-              {isPending ? "Processing..." : "Create Order"}
+              {isPending ? t('processing') : t('create_order')}
             </Button>
           </div>
         </SheetContent>
@@ -499,7 +544,7 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
                   <p className="font-medium">{viewOrder.supplier?.name}</p>
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-500 uppercase">Status</Label>
+                  <Label className="text-xs text-slate-500 uppercase">{t('status')}</Label>
                   <Badge variant="outline" className={cn(
                     "capitalize border-0",
                     viewOrder.status === 'received' && "bg-emerald-500/10 text-emerald-500",
@@ -508,20 +553,20 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
                   </Badge>
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-500 uppercase">Total Amount</Label>
+                  <Label className="text-xs text-slate-500 uppercase">{t('total')} {t('amount')}</Label>
                   <p className="font-mono text-emerald-500">{t('currency_symbol')}{viewOrder.totalAmount}</p>
                 </div>
               </div>
 
               <div>
-                <h4 className="text-sm font-medium mb-3">Order Items</h4>
+                <h4 className="text-sm font-medium mb-3">{t('order')} {t('items')}</h4>
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase text-slate-500 bg-slate-900">
                     <tr>
-                      <th className="px-4 py-2 text-left">Item</th>
-                      <th className="px-4 py-2 text-right">Qty</th>
-                      <th className="px-4 py-2 text-right">Unit Cost</th>
-                      <th className="px-4 py-2 text-right">Total</th>
+                      <th className="px-4 py-2 text-left">{t('item')}</th>
+                      <th className="px-4 py-2 text-right">{t('quantity_short')}</th>
+                      <th className="px-4 py-2 text-right">{t('unit_cost')}</th>
+                      <th className="px-4 py-2 text-right">{t('total')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
@@ -538,6 +583,67 @@ export function PurchasingManagement({ user, canManage, canView }: PurchasingMan
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Add Supplier Dialog */}
+      <Dialog open={isSupplierOpen} onOpenChange={setIsSupplierOpen}>
+        <DialogContent className="bg-slate-950 border-slate-800 text-white">
+          <DialogHeader>
+            <DialogTitle>{t('add_new_supplier')}</DialogTitle>
+            <DialogDescription>{t('add_supplier_desc')}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('supplier')} {t('name')}</Label>
+                <Input
+                  className="bg-slate-900 border-slate-800"
+                  value={newSupplier.name}
+                  onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('supplier_code')}</Label>
+                <Input
+                  className="bg-slate-900 border-slate-800"
+                  value={newSupplier.supplierCode}
+                  placeholder="e.g. SUP-001"
+                  onChange={(e) => setNewSupplier({ ...newSupplier, supplierCode: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('email')}</Label>
+                <Input
+                  type="email"
+                  className="bg-slate-900 border-slate-800"
+                  value={newSupplier.email}
+                  onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('phone')}</Label>
+                <Input
+                  className="bg-slate-900 border-slate-800"
+                  value={newSupplier.phone}
+                  onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('address')}</Label>
+              <Input
+                className="bg-slate-900 border-slate-800"
+                value={newSupplier.address}
+                onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })}
+              />
+            </div>
+          </div>
+          <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleCreateSupplier} disabled={isPending}>
+            {isPending ? t('processing') : t('add_supplier')}
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

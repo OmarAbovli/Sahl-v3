@@ -80,7 +80,7 @@ export function JournalEntries({ user, canManage, canView }: JournalEntriesProps
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-light text-white">{t('journal_entries')}</h2>
-          <p className="text-slate-500 text-[10px] uppercase tracking-widest mt-1">Double-Entry Ledger Records</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-widest mt-1">{t('ledger_records')}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative w-64">
@@ -115,7 +115,7 @@ export function JournalEntries({ user, canManage, canView }: JournalEntriesProps
           ))
         ) : filteredEntries.length === 0 ? (
           <div className="py-24 text-center text-slate-600 italic border border-slate-800 bg-slate-950/20">
-            No journal entries found.
+            {t('no_data')}
           </div>
         ) : (
           filteredEntries.map((entry, idx) => (
@@ -129,7 +129,7 @@ export function JournalEntries({ user, canManage, canView }: JournalEntriesProps
               <div className="p-4 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/20">
                 <div className="flex items-center gap-6">
                   <div className="flex flex-col">
-                    <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold leading-none mb-1">Entry #</span>
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold leading-none mb-1">{t('invoice_number')}</span>
                     <span className="font-mono text-xs text-amber-500 font-bold">{entry.entryNumber}</span>
                   </div>
                   <div className="h-6 w-[1px] bg-slate-800"></div>
@@ -142,10 +142,10 @@ export function JournalEntries({ user, canManage, canView }: JournalEntriesProps
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col items-end">
-                    <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold">Total Power</span>
+                    <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold">{t('total')} {t('amount')}</span>
                     <span className="text-xs font-mono text-emerald-500 font-bold">{t('currency_symbol')} {Number(entry.totalDebit).toLocaleString()}</span>
                   </div>
-                  <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-none text-[8px] uppercase tracking-widest h-5 px-2">Posted</Badge>
+                  <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-none text-[8px] uppercase tracking-widest h-5 px-2">{t('posted')}</Badge>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-white"><MoreVertical className="h-4 w-4" /></Button>
                 </div>
               </div>
@@ -263,7 +263,7 @@ function NewEntryDialog({ user, accounts, onSuccess, trigger }: any) {
         <div className="h-1 bg-amber-500 w-full"></div>
         <DialogHeader className="p-8 pb-4">
           <DialogTitle className="text-3xl font-light tracking-tight">{t('new')} {t('journal_entries')}</DialogTitle>
-          <DialogDescription className="text-slate-500 uppercase tracking-widest text-[10px] font-bold">Manual Ledger Allocation</DialogDescription>
+          <DialogDescription className="text-slate-500 uppercase tracking-widest text-[10px] font-bold">{t('manual_ledger_allocation')}</DialogDescription>
         </DialogHeader>
 
         <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
@@ -274,15 +274,15 @@ function NewEntryDialog({ user, accounts, onSuccess, trigger }: any) {
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('description')}</label>
-              <Input placeholder="Enter transaction narrative..." value={description} onChange={e => setDescription(e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-11 text-sm" />
+              <Input placeholder={t('transaction_narrative_placeholder')} value={description} onChange={e => setDescription(e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-11 text-sm" />
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-[10px] uppercase tracking-[0.2em] text-amber-500 font-bold">Ledger Allocations</h4>
+              <h4 className="text-[10px] uppercase tracking-[0.2em] text-amber-500 font-bold">{t('ledger_allocations')}</h4>
               <Button variant="ghost" size="sm" onClick={addLine} className="text-amber-500 hover:text-amber-400 text-[10px] uppercase font-bold tracking-widest">
-                <Plus className="h-3 w-3 mr-1" /> Add Line
+                <Plus className="h-3 w-3 mr-1" /> {t('add_line')}
               </Button>
             </div>
 
@@ -292,7 +292,7 @@ function NewEntryDialog({ user, accounts, onSuccess, trigger }: any) {
                   <div className="col-span-4">
                     <Select value={line.accountId} onValueChange={v => updateLine(idx, 'accountId', v)}>
                       <SelectTrigger className="bg-slate-900 border-slate-800 rounded-none h-10 text-xs">
-                        <SelectValue placeholder="Select Account" />
+                        <SelectValue placeholder={t('select_account')} />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         {accounts.map((acc: any) => (
@@ -302,13 +302,13 @@ function NewEntryDialog({ user, accounts, onSuccess, trigger }: any) {
                     </Select>
                   </div>
                   <div className="col-span-4">
-                    <Input placeholder="Line description..." value={line.description} onChange={e => updateLine(idx, 'description', e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-10 text-xs" />
+                    <Input placeholder={t('line_description')} value={line.description} onChange={e => updateLine(idx, 'description', e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-10 text-xs" />
                   </div>
                   <div className="col-span-1.5 flex flex-col gap-1">
-                    <Input type="number" step="0.01" placeholder="Debit" value={line.debit} onChange={e => updateLine(idx, 'debit', e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-10 text-xs font-mono text-emerald-500 text-right" />
+                    <Input type="number" step="0.01" placeholder={t('debit')} value={line.debit} onChange={e => updateLine(idx, 'debit', e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-10 text-xs font-mono text-emerald-500 text-right" />
                   </div>
                   <div className="col-span-1.5 flex flex-col gap-1">
-                    <Input type="number" step="0.01" placeholder="Credit" value={line.credit} onChange={e => updateLine(idx, 'credit', e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-10 text-xs font-mono text-rose-500 text-right" />
+                    <Input type="number" step="0.01" placeholder={t('credit')} value={line.credit} onChange={e => updateLine(idx, 'credit', e.target.value)} className="bg-slate-900 border-slate-800 rounded-none h-10 text-xs font-mono text-rose-500 text-right" />
                   </div>
                   <div className="col-span-1 flex pt-1 justify-center">
                     <Button variant="ghost" size="icon" disabled={lines.length <= 2} onClick={() => removeLine(idx)} className="h-8 w-8 text-slate-600 hover:text-red-500">
@@ -324,22 +324,22 @@ function NewEntryDialog({ user, accounts, onSuccess, trigger }: any) {
         <div className="p-8 border-t border-slate-800 bg-slate-950 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex gap-10">
             <div className="flex flex-col">
-              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold mb-1">Total Debit</span>
+              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold mb-1">{t('total_debit')}</span>
               <span className="text-xl font-mono text-emerald-500 font-light">{t('currency_symbol')} {totalDebit.toLocaleString()}</span>
             </div>
             <div className="flex flex-col border-l border-slate-800 pl-10">
-              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold mb-1">Total Credit</span>
+              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold mb-1">{t('total_credit')}</span>
               <span className="text-xl font-mono text-rose-500 font-light">{t('currency_symbol')} {totalCredit.toLocaleString()}</span>
             </div>
             <div className="flex flex-col border-l border-slate-800 pl-10">
-              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold mb-1">Status</span>
+              <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold mb-1">{t('status')}</span>
               {isBalanced ? (
                 <div className="flex items-center gap-1.5 text-emerald-500 text-xs uppercase font-bold tracking-widest mt-2 animate-in pulse duration-1000">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Balanced
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {t('balanced')}
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 text-rose-500 text-xs uppercase font-bold tracking-widest mt-2">
-                  <XCircle className="h-3.5 w-3.5" /> Out of Balance ({t('currency_symbol')} {Math.abs(totalDebit - totalCredit).toFixed(2)})
+                  <XCircle className="h-3.5 w-3.5" /> {t('out_of_balance')} ({t('currency_symbol')} {Math.abs(totalDebit - totalCredit).toFixed(2)})
                 </div>
               )}
             </div>
@@ -347,10 +347,10 @@ function NewEntryDialog({ user, accounts, onSuccess, trigger }: any) {
 
           <div className="flex gap-4">
             <Button variant="outline" className="border-slate-800 text-slate-400 hover:bg-slate-900 rounded-none h-12 px-8 uppercase tracking-widest text-[10px] font-bold" onClick={() => setOpen(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button disabled={!isBalanced || loading} onClick={handleSave} className="bg-white text-black hover:bg-amber-50 rounded-none h-12 px-10 uppercase tracking-widest text-[10px] font-bold">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post to General Ledger"}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('post_to_gl')}
             </Button>
           </div>
         </div>

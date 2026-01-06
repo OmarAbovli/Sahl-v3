@@ -88,7 +88,7 @@ export function ChartOfAccounts({ user }: Props) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-light text-white">{t('chart_of_accounts')}</h2>
-          <p className="text-slate-500 text-[10px] uppercase tracking-widest mt-1">Foundational Financial Structure</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-widest mt-1">{t('financial_structure')}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative w-64">
@@ -141,7 +141,7 @@ export function ChartOfAccounts({ user }: Props) {
 
               <div className="flex items-center gap-8">
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Balance</span>
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('balance')}</span>
                   <span className={cn(
                     "text-sm font-mono font-medium",
                     Number(acc.balance) < 0 ? "text-rose-500" : "text-emerald-500"
@@ -152,9 +152,9 @@ export function ChartOfAccounts({ user }: Props) {
 
                 <div className="flex items-center gap-4">
                   {acc.isActive ? (
-                    <Badge variant="outline" className="text-[8px] uppercase tracking-tighter border-emerald-500/20 text-emerald-500 bg-emerald-500/5 rounded-none">Active</Badge>
+                    <Badge variant="outline" className="text-[8px] uppercase tracking-tighter border-emerald-500/20 text-emerald-500 bg-emerald-500/5 rounded-none">{t('active')}</Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[8px] uppercase tracking-tighter border-rose-500/20 text-rose-500 bg-rose-500/10 rounded-none">Inactive</Badge>
+                    <Badge variant="outline" className="text-[8px] uppercase tracking-tighter border-rose-500/20 text-rose-500 bg-rose-500/10 rounded-none">{t('inactive')}</Badge>
                   )}
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-white">
                     <MoreHorizontal className="h-4 w-4" />

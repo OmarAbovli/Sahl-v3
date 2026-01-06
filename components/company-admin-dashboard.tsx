@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, FileText, Package, TrendingUp, Activity, DollarSign, ArrowUpRight, ArrowDownRight, Loader2, Calendar, RefreshCcw, Bell, ShieldCheck } from "lucide-react"
@@ -24,6 +25,7 @@ interface CompanyAdminDashboardProps {
 }
 
 export function CompanyAdminDashboard({ user, stats: initialStats }: CompanyAdminDashboardProps) {
+  const router = useRouter()
   const { t, isRTL, language } = useTranslation()
   const [stats, setStats] = useState<any>(initialStats)
   const [activity, setActivity] = useState<any[]>([])
@@ -116,13 +118,12 @@ export function CompanyAdminDashboard({ user, stats: initialStats }: CompanyAdmi
               <RefreshCcw className={cn("h-4 w-4", isLoading && "animate-spin")} />
             </Button>
             <div className="w-[1px] h-4 bg-slate-800 mx-1"></div>
-            <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:text-white rounded-none relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-2 w-2 bg-amber-500 rounded-full border-2 border-slate-950"></span>
-            </Button>
           </div>
-          <Button className="bg-white text-black hover:bg-amber-50 rounded-none h-12 px-8 uppercase tracking-[0.2em] font-black text-[10px] shadow-2xl">
-            Global Report
+          <Button
+            className="bg-white text-black hover:bg-amber-50 rounded-none h-12 px-8 uppercase tracking-[0.2em] font-black text-[10px] shadow-2xl"
+            onClick={() => router.push('/company-admin/accounting?view=financial_reports')}
+          >
+            {t('global_report' as any) || 'Global Report'}
           </Button>
         </div>
       </div>
@@ -280,7 +281,11 @@ export function CompanyAdminDashboard({ user, stats: initialStats }: CompanyAdmi
           </div>
 
           <div className="mt-10 pt-10 border-t border-white/5">
-            <Button variant="ghost" className="w-full text-amber-500 font-black uppercase tracking-[0.3em] text-[10px] hover:text-amber-400 hover:bg-slate-900/50 rounded-none h-12">
+            <Button
+              variant="ghost"
+              className="w-full text-amber-500 font-black uppercase tracking-[0.3em] text-[10px] hover:text-amber-400 hover:bg-slate-900/50 rounded-none h-12"
+              onClick={() => router.push('/company-admin/accounting?view=financial_reports#statements')}
+            >
               Access Full Audit Logs
             </Button>
           </div>

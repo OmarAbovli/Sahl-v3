@@ -6,12 +6,225 @@ import {
     customerPayments,
     supplierPayments,
     salesInvoices,
-    purchaseOrders,
-    chartOfAccounts
+    purchaseInvoices,
+    chartOfAccounts,
+    treasurySessions,
+    treasuryTransfers,
+    users
 } from "@/db/schema"
-import { eq, and, sql } from "drizzle-orm"
+import { eq, and, sql, desc, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { createJournalEntry, getCOA } from "@/actions/accounting"
+
+// --- TREASURY SESSIONS (SHIFTS) ---
+
+export async function getActiveTreasurySession(userId: number, companyId: number) {
+    try {
+        const session = await db.query.treasurySessions.findFirst({
+            where: and(
+                eq(treasurySessions.userId, userId),
+                eq(treasurySessions.companyId, companyId),
+                eq(treasurySessions.status, 'open')
+            )
+        })
+        return { success: true, data: session }
+    } catch (error) {
+        return { success: false, error: "Failed to fetch session" }
+    }
+}
+
+export async function getAllTreasurySessions(companyId: number) {
+    try {
+        const sessions = await db.query.treasurySessions.findMany({
+            where: eq(treasurySessions.companyId, companyId),
+            with: {
+                user: true
+            },
+            orderBy: [desc(treasurySessions.openedAt)]
+        })
+        return { success: true, data: sessions }
+    } catch (error) {
+        return { success: false, error: "Failed to fetch all sessions" }
+    }
+}
+
+export async function openTreasurySession(data: {
+    userId: number,
+    companyId: number,
+    openingBalance: number,
+    currency?: string,
+    notes?: string
+}) {
+    try {
+        const [session] = await db.insert(treasurySessions).values({
+            companyId: data.companyId,
+            userId: data.userId,
+            openingBalance: data.openingBalance.toString(),
+            expectedClosingBalance: data.openingBalance.toString(), // Start with opening
+            currency: data.currency || 'EGP',
+            status: 'open',
+            notes: data.notes
+        }).returning()
+
+        revalidatePath('/company-admin/accounting')
+        revalidatePath('/employee/treasury')
+        return { success: true, data: session }
+    } catch (error) {
+        return { success: false, error: "Failed to open session" }
+    }
+}
+
+export async function closeTreasurySession(data: {
+    sessionId: number,
+    actualBalance: number,
+    notes?: string
+}) {
+    try {
+        const session = await db.query.treasurySessions.findFirst({
+            where: eq(treasurySessions.id, data.sessionId)
+        })
+
+        if (!session) throw new Error("Session not found")
+
+        const diff = data.actualBalance - parseFloat(session.expectedClosingBalance || '0')
+
+        await db.update(treasurySessions).set({
+            actualClosingBalance: data.actualBalance.toString(),
+            difference: diff.toString(),
+            status: 'closed',
+            closedAt: new Date().toISOString(),
+            notes: data.notes
+        }).where(eq(treasurySessions.id, data.sessionId))
+
+        revalidatePath('/company-admin/accounting')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: "Failed to close session" }
+    }
+}
+
+// --- VAULT TRANSFERS ---
+
+export async function getTreasuryTransfers(companyId: number) {
+    try {
+        const data = await db.query.treasuryTransfers.findMany({
+            where: eq(treasuryTransfers.companyId, companyId),
+            orderBy: [desc(treasuryTransfers.createdAt)]
+        })
+        return { success: true, data }
+    } catch (error) {
+        return { success: false, error: "Failed to fetch transfers" }
+    }
+}
+
+export async function createTreasuryTransfer(data: {
+    userId: number,
+    companyId: number,
+    fromUserId?: number,
+    toUserId?: number,
+    fromAccountId?: number,
+    toAccountId?: number,
+    amount: number,
+    currency?: string,
+    conversionRate?: number,
+    type: string,
+    reference?: string,
+    notes?: string
+}) {
+    try {
+        await db.insert(treasuryTransfers).values({
+            companyId: data.companyId,
+            fromUserId: data.fromUserId,
+            toUserId: data.toUserId,
+            fromAccountId: data.fromAccountId,
+            toAccountId: data.toAccountId,
+            amount: data.amount.toString(),
+            currency: data.currency || 'EGP',
+            conversionRate: (data.conversionRate || 1).toString(),
+            type: data.type,
+            status: 'pending',
+            reference: data.reference,
+            notes: data.notes,
+            createdBy: data.userId
+        })
+
+        revalidatePath('/company-admin/accounting')
+        revalidatePath('/employee/treasury')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: "Failed to create transfer" }
+    }
+}
+
+export async function approveTreasuryTransfer(transferId: number, userId: number) {
+    try {
+        const transfer = await db.query.treasuryTransfers.findFirst({
+            where: eq(treasuryTransfers.id, transferId)
+        })
+
+        if (!transfer) throw new Error("Transfer not found")
+
+        // 1. Update status
+        await db.update(treasuryTransfers).set({
+            status: 'completed',
+            updatedAt: new Date().toISOString()
+        }).where(eq(treasuryTransfers.id, transferId))
+
+        const amountNum = parseFloat(transfer.amount)
+        const rateNum = parseFloat(transfer.conversionRate || '1')
+        const convertedAmount = amountNum * rateNum
+
+        // 2. Update Bank Account balances
+        if (transfer.fromAccountId) {
+            const acc = await db.query.cashBankAccounts.findFirst({ where: eq(cashBankAccounts.id, transfer.fromAccountId) })
+            if (acc) {
+                const newBalance = (parseFloat(acc.balance || '0') - amountNum).toString()
+                await db.update(cashBankAccounts).set({ balance: newBalance }).where(eq(cashBankAccounts.id, transfer.fromAccountId))
+            }
+        }
+        if (transfer.toAccountId) {
+            const acc = await db.query.cashBankAccounts.findFirst({ where: eq(cashBankAccounts.id, transfer.toAccountId) })
+            if (acc) {
+                const newBalance = (parseFloat(acc.balance || '0') + amountNum).toString()
+                await db.update(cashBankAccounts).set({ balance: newBalance }).where(eq(cashBankAccounts.id, transfer.toAccountId))
+            }
+        }
+
+        // 3. Update User Vault (Treasury Sessions) balances
+        if (transfer.fromUserId) {
+            const session = await db.query.treasurySessions.findFirst({
+                where: and(
+                    eq(treasurySessions.userId, transfer.fromUserId),
+                    eq(treasurySessions.companyId, transfer.companyId),
+                    eq(treasurySessions.status, 'open')
+                )
+            })
+            if (session) {
+                const newExpBalance = (parseFloat(session.expectedClosingBalance || '0') - convertedAmount).toString()
+                await db.update(treasurySessions).set({ expectedClosingBalance: newExpBalance }).where(eq(treasurySessions.id, session.id))
+            }
+        }
+        if (transfer.toUserId) {
+            const session = await db.query.treasurySessions.findFirst({
+                where: and(
+                    eq(treasurySessions.userId, transfer.toUserId),
+                    eq(treasurySessions.companyId, transfer.companyId),
+                    eq(treasurySessions.status, 'open')
+                )
+            })
+            if (session) {
+                const newExpBalance = (parseFloat(session.expectedClosingBalance || '0') + convertedAmount).toString()
+                await db.update(treasurySessions).set({ expectedClosingBalance: newExpBalance }).where(eq(treasurySessions.id, session.id))
+            }
+        }
+
+        revalidatePath('/company-admin/accounting')
+        revalidatePath('/employee/treasury')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: "Failed to approve transfer" }
+    }
+}
 
 // --- ACCOUNTS ---
 
@@ -40,6 +253,22 @@ export async function createCashBankAccount(companyId: number, data: any) {
         return { success: true }
     } catch (error) {
         return { success: false, error: "Failed to create account" }
+    }
+}
+
+export async function getAllCompanyUsers(companyId: number) {
+    try {
+        const data = await db.query.users.findMany({
+            where: eq(users.companyId, companyId),
+            columns: {
+                id: true,
+                email: true,
+                role: true
+            }
+        })
+        return { success: true, data }
+    } catch (error) {
+        return { success: false, error: "Failed to fetch users" }
     }
 }
 

@@ -238,7 +238,7 @@ export function RolesPermissionsManager({ companyId }: RolesPermissionsManagerPr
                         </CardHeader>
                         <CardContent className="p-8 space-y-10 overflow-y-auto max-h-[600px]">
                             {/* Grouping permissions by module prefix if possible */}
-                            {["sales", "purchasing", "inventory", "ledger", "reports", "settings", "users", "crm", "hr", "payroll", "attendance", "leave", "assets", "admin"].map(group => {
+                            {["sales", "purchasing", "inventory", "ledger", "reports", "treasury", "settings", "users", "crm", "hr", "payroll", "attendance", "leave", "assets", "admin"].map(group => {
                                 const groupPermissions = permissions.filter(p => p.name.includes(group))
                                 if (groupPermissions.length === 0) return null
 

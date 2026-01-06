@@ -11,7 +11,7 @@ export default async function EmployeePage() {
     const navItems = getEmployeeNavItems(user)
 
     return (
-      <DashboardShell userRole={user.role} userName={user.email} navItems={navItems}>
+      <DashboardShell userRole={user.role} userName={user.email} companyId={user.companyId || user.company_id || undefined} navItems={navItems}>
         <EmployeeDashboard user={user} />
       </DashboardShell>
     )

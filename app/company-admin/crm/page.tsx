@@ -37,7 +37,7 @@ export default async function CRMPage({
     const stats = statsRes.success ? statsRes.data : { leads: 0, openDeals: 0, wonValue: 0 }
 
     return (
-        <DashboardShell userRole={user.role} userName={user.email} navItems={navItems}>
+        <DashboardShell userRole={user.role} userName={user.email} companyId={user.companyId || undefined} navItems={navItems}>
             <div className="space-y-8">
                 <CRMSeeder />
                 <div className="flex justify-between items-center">

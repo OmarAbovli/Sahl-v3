@@ -13,6 +13,7 @@ import { FinancialReports } from "@/components/financial-reports"
 import { AccountsReceivableManagement } from "@/components/accounts-receivable-management"
 import { AccountsPayableManagement } from "@/components/accounts-payable-management"
 import { FixedAssetsManagement } from "@/components/fixed-assets-management"
+import { TreasuryManagement } from "@/components/treasury-management"
 
 export default async function AdminAccountingPage({
     searchParams
@@ -33,12 +34,13 @@ export default async function AdminAccountingPage({
                 case "accounts_receivable": return <AccountsReceivableManagement user={user as any} canManage={true} canView={true} />
                 case "accounts_payable": return <AccountsPayableManagement user={user as any} canManage={true} canView={true} />
                 case "fixed_assets": return <FixedAssetsManagement companyId={user.companyId || 0} user={user as any} canManage={true} canView={true} />
+                case "treasury": return <TreasuryManagement user={user as any} canManage={true} canView={true} />
                 default: return <ChartOfAccounts user={user as any} />
             }
         }
 
         return (
-            <DashboardShell userRole={user.role} userName={user.email} navItems={navItems}>
+            <DashboardShell userRole={user.role} userName={user.email} companyId={user.companyId || undefined} navItems={navItems}>
                 <div className="bg-slate-900/50 backdrop-blur-3xl border border-slate-800 p-8 min-h-[calc(100vh-12rem)] shadow-2xl">
                     {renderView()}
                 </div>

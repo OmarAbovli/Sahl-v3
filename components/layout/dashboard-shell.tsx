@@ -6,7 +6,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { useTranslation } from "@/hooks/use-translation"
 import {
     LayoutDashboard,
@@ -26,8 +26,14 @@ import {
     Building,
     BookOpen,
     Calculator,
-    Languages
+    Languages,
+    Bell,
+    Activity,
+    Calendar,
+    Search,
+    Factory
 } from "lucide-react"
+import { getRecentActivity, getAIInsights } from "@/actions/dashboard"
 
 // Icon Mapping
 const IconMap: Record<string, any> = {
@@ -44,19 +50,25 @@ const IconMap: Record<string, any> = {
     Banknote,
     Building,
     BookOpen,
-    Calculator
+    Calculator,
+    Factory
 }
 
 interface DashboardShellProps {
     children: React.ReactNode
     userRole: string
     userName?: string
+    companyId?: number
     navItems: { title: string; items: { name: string; href: string; iconName: string }[] }[]
 }
 
-export function DashboardShell({ children, userRole, userName, navItems }: DashboardShellProps) {
+export function DashboardShell({ children, userRole, userName, companyId, navItems }: DashboardShellProps) {
     const { t, language, setLanguage, isRTL } = useTranslation()
     const [open, setOpen] = React.useState(false)
+    const [notificationsOpen, setNotificationsOpen] = React.useState(false)
+    const [notifications, setNotifications] = React.useState<any[]>([])
+    const [aiInsights, setAiInsights] = React.useState<any[]>([])
+    const [isLoadingNotifications, setIsLoadingNotifications] = React.useState(false)
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -73,6 +85,24 @@ export function DashboardShell({ children, userRole, userName, navItems }: Dashb
 
     const toggleLanguage = () => {
         setLanguage(language === 'en' ? 'ar' : 'en')
+    }
+
+    const fetchNotifications = async () => {
+        if (!companyId) return
+        setIsLoadingNotifications(true)
+        setNotificationsOpen(true)
+        try {
+            const [logsRes, aiRes] = await Promise.all([
+                getRecentActivity(companyId, 10),
+                getAIInsights(companyId, 10)
+            ])
+            if (logsRes.success) setNotifications(logsRes.data)
+            if (aiRes.success) setAiInsights(aiRes.data)
+        } catch (err) {
+            console.error("Failed to fetch notifications", err)
+        } finally {
+            setIsLoadingNotifications(false)
+        }
     }
 
     // Identify current page name for Header
@@ -106,6 +136,10 @@ export function DashboardShell({ children, userRole, userName, navItems }: Dashb
                     </Button>
                 </SheetTrigger>
                 <SheetContent side={isRTL ? "right" : "left"} className="p-0 bg-slate-950 border-slate-800 w-64">
+                    <SheetHeader className="sr-only">
+                        <SheetTitle>Menu</SheetTitle>
+                        <SheetDescription>Navigation Menu</SheetDescription>
+                    </SheetHeader>
                     <SidebarNav groups={navItems} pathname={pathname} />
                 </SheetContent>
             </Sheet>
@@ -163,6 +197,93 @@ export function DashboardShell({ children, userRole, userName, navItems }: Dashb
                             <Languages className={cn("h-4 w-4", isRTL ? "ml-2" : "mr-2")} />
                             {language === 'en' ? 'العربية' : 'English'}
                         </Button>
+
+                        <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={fetchNotifications}
+                                className="h-10 w-10 text-slate-400 hover:text-white relative bg-slate-900 border border-slate-800"
+                            >
+                                <Bell className="h-4 w-4" />
+                                <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 bg-amber-500 rounded-full border border-slate-950"></span>
+                            </Button>
+                            <SheetContent side={isRTL ? "left" : "right"} className="bg-slate-950 border-slate-800 p-0 w-80">
+                                <div className="flex flex-col h-full">
+                                    <SheetHeader className="p-6 border-b border-slate-800">
+                                        <SheetTitle className="text-lg font-bold text-white flex items-center gap-2">
+                                            <Bell className="h-4 w-4 text-amber-500" />
+                                            {t('notifications' as any)}
+                                        </SheetTitle>
+                                        <SheetDescription className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-black">
+                                            Audit Trail Insight
+                                        </SheetDescription>
+                                    </SheetHeader>
+                                    <ScrollArea className="flex-1 p-4">
+                                        <div className="space-y-6">
+                                            {/* AI Insights Section */}
+                                            {aiInsights.length > 0 && (
+                                                <div className="space-y-3">
+                                                    <h4 className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] px-1">AI Intelligence</h4>
+                                                    {aiInsights.map((insight) => (
+                                                        <div key={insight.id} className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg group hover:bg-amber-500/10 transition-all">
+                                                            <div className="flex justify-between items-start mb-1">
+                                                                <span className="text-[10px] font-black uppercase text-amber-500">{insight.insightType}</span>
+                                                                <span className="text-[8px] font-mono text-slate-600">{new Date(insight.createdAt).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <p className="text-xs text-white font-bold leading-tight">{insight.title}</p>
+                                                            <p className="text-[10px] text-slate-400 mt-2">
+                                                                {insight.description}
+                                                            </p>
+                                                            {insight.actionUrl && (
+                                                                <Button variant="link" className="p-0 h-auto text-[10px] text-amber-500 hover:text-amber-400 mt-2 uppercase font-bold" onClick={() => {
+                                                                    router.push(insight.actionUrl)
+                                                                    setNotificationsOpen(false)
+                                                                }}>
+                                                                    Analyze Details →
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Activity Logs Section */}
+                                            <div className="space-y-3">
+                                                <h4 className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] px-1">Recent Activity</h4>
+                                                {isLoadingNotifications ? (
+                                                    <div className="py-10 text-center text-slate-500 animate-pulse uppercase text-[10px] tracking-widest">Scanning logs...</div>
+                                                ) : notifications.length > 0 ? (
+                                                    notifications.map((log) => (
+                                                        <div key={log.id} className="p-3 bg-slate-900/50 border border-slate-800/50 rounded-lg group hover:border-slate-700 transition-all">
+                                                            <div className="flex justify-between items-start mb-1">
+                                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-tighter">{log.tableName}</span>
+                                                                <span className="text-[8px] font-mono text-slate-600">{new Date(log.createdAt).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <p className="text-xs text-slate-300 font-medium leading-tight">{log.action}</p>
+                                                            <p className="text-[10px] text-slate-500 mt-2 line-clamp-2">
+                                                                {typeof log.details === 'string' ? log.details : 'Operation verified by system.'}
+                                                            </p>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="py-10 text-center text-slate-600 flex flex-col items-center gap-3">
+                                                        <Activity className="h-4 w-4 opacity-10" />
+                                                        <p className="text-[10px] uppercase tracking-[0.2em] font-black">Quiet Sector</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </ScrollArea>
+                                    <div className="p-4 border-t border-slate-800">
+                                        <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-widest text-slate-500 hover:text-amber-500" onClick={() => setNotificationsOpen(false)}>
+                                            Dismiss All
+                                        </Button>
+                                    </div>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                             <span className="text-[10px] text-slate-400 uppercase tracking-tighter">

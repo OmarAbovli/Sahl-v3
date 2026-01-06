@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { salesInvoices, purchaseInvoices, inventory, employees, auditLogs } from "@/db/schema"
+import { salesInvoices, purchaseInvoices, inventory, employees, auditLogs, aiInsights } from "@/db/schema"
 import { eq, sql, desc, and } from "drizzle-orm"
 
 export async function getDashboardStats(companyId: number) {
@@ -67,5 +67,19 @@ export async function getRecentActivity(companyId: number, limit: number = 5) {
         return { success: true, data: logs }
     } catch (error) {
         return { success: false, error: "Failed to fetch activity" }
+    }
+}
+
+export async function getAIInsights(companyId: number, limit: number = 5) {
+    try {
+        const insights = await db.query.aiInsights.findMany({
+            where: and(eq(aiInsights.companyId, companyId), eq(sql`is_read`, false)),
+            orderBy: [desc(sql`created_at`)],
+            limit
+        })
+        return { success: true, data: insights }
+    } catch (error) {
+        console.error("Error fetching AI insights:", error)
+        return { success: false, error: "Failed to fetch AI insights" }
     }
 }

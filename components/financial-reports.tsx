@@ -46,7 +46,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/hooks/use-translation"
-import { getFinancialMetrics, getFinancialTrend, getTopSellingItems, getBalanceSheet, getExportData } from "@/actions/reports"
+import { getFinancialMetrics, getFinancialTrend, getTopSellingItems, getBalanceSheet, getExportData, getIncomeStatement, getCashFlowStatement } from "@/actions/reports"
 
 interface FinancialReportsProps {
   user: any
@@ -60,6 +60,8 @@ export function FinancialReports({ user, canManage, canView }: FinancialReportsP
   const [trend, setTrend] = useState<any[]>([])
   const [topItems, setTopItems] = useState<any[]>([])
   const [balanceSheet, setBalanceSheet] = useState<any>(null)
+  const [incomeStatement, setIncomeStatement] = useState<any>(null)
+  const [cashFlow, setCashFlow] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   // Export State
@@ -77,16 +79,20 @@ export function FinancialReports({ user, canManage, canView }: FinancialReportsP
     setLoading(true)
 
     try {
-      const [mRes, tRes, iRes, bRes] = await Promise.all([
+      const [mRes, tRes, iRes, bRes, isRes, cfRes] = await Promise.all([
         getFinancialMetrics(user.companyId),
         getFinancialTrend(user.companyId),
         getTopSellingItems(user.companyId),
-        getBalanceSheet(user.companyId)
+        getBalanceSheet(user.companyId),
+        getIncomeStatement(user.companyId),
+        getCashFlowStatement(user.companyId)
       ])
 
       if (mRes.success) setMetrics(mRes.data)
       if (tRes.success) setTrend(tRes.data as any[])
-      if (bsRes.success) setBalanceSheet(bsRes.data)
+      if (bRes.success) setBalanceSheet(bRes.data)
+      if (isRes.success) setIncomeStatement(isRes.data)
+      if (cfRes.success) setCashFlow(cfRes.data)
     } catch (error) {
       toast.error(t('error_occurred'))
     } finally {
@@ -274,7 +280,7 @@ export function FinancialReports({ user, canManage, canView }: FinancialReportsP
               <PieIcon className="h-32 w-32 text-amber-500" />
             </div>
             <CardHeader className="p-8 border-b border-slate-800/50">
-              <CardTitle className="text-2xl font-light text-white">{t('balance')} {t('sheet' as any || 'Statement')}</CardTitle>
+              <CardTitle className="text-2xl font-light text-white">{t('balance')} {t('sheet')}</CardTitle>
               <CardDescription className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Snapshot of Financial Position</CardDescription>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
@@ -312,40 +318,99 @@ export function FinancialReports({ user, canManage, canView }: FinancialReportsP
             </CardContent>
           </Card>
 
-          {/* Detailed P&L */}
+          {/* DYNAMIC INCOME STATEMENT */}
           <Card className="bg-slate-950/40 border-slate-800 rounded-none relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <FileText className="h-32 w-32 text-amber-500" />
             </div>
             <CardHeader className="p-8 border-b border-slate-800/50">
               <CardTitle className="text-2xl font-light text-white">{t('profit_loss')} {t('reports')}</CardTitle>
-              <CardDescription className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Year-To-Date Performance Ledger</CardDescription>
+              <CardDescription className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Dynamic Performance Analysis</CardDescription>
             </CardHeader>
             <CardContent className="p-8">
-              <table className="w-full">
-                <tbody className="divide-y divide-slate-800">
-                  <tr className="group">
-                    <td className="py-5 text-slate-300 font-light text-sm">{t('revenue')}</td>
-                    <td className="py-5 text-right text-emerald-500 font-bold font-mono text-base">{formatCurrency(metrics?.revenue || 0)}</td>
-                  </tr>
-                  <tr className="group">
-                    <td className="py-5 text-slate-500 font-light text-sm pl-6 italic">Estimated Cost Basis</td>
-                    <td className="py-5 text-right text-rose-400 font-mono text-sm">({formatCurrency(metrics?.expenses * 0.7 || 0)})</td>
-                  </tr>
-                  <tr className="bg-slate-900/40">
-                    <td className="py-5 text-white font-bold text-sm px-4 uppercase tracking-widest">Gross Yield</td>
-                    <td className="py-5 text-right text-white font-bold font-mono text-base px-4">{formatCurrency((metrics?.revenue || 0) - (metrics?.expenses * 0.7 || 0))}</td>
-                  </tr>
-                  <tr className="group">
-                    <td className="py-5 text-slate-500 font-light text-sm pl-6 italic">{t('expense')}</td>
-                    <td className="py-5 text-right text-rose-400 font-mono text-sm">({formatCurrency(metrics?.expenses * 0.3 || 0)})</td>
-                  </tr>
-                  <tr className="bg-amber-500/10 h-24">
-                    <td className="py-4 text-amber-500 font-bold text-xl uppercase tracking-tighter px-6">{t('profit_loss')} (NET)</td>
-                    <td className="py-4 text-right text-amber-500 font-bold font-mono text-2xl px-6">{formatCurrency(metrics?.netProfit || 0)}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-amber-500 text-[10px] uppercase tracking-widest font-bold mb-3">{t('revenue')}</h4>
+                    {incomeStatement?.revenue.map((r: any) => (
+                      <div key={r.code} className="flex justify-between py-3 border-b border-white/5">
+                        <span className="text-slate-400 text-sm">{r.name}</span>
+                        <span className="text-emerald-500 font-mono">{formatCurrency(r.balance)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between py-4 font-bold text-white border-b-2 border-slate-800">
+                      <span className="text-xs uppercase tracking-widest">{t('total')} {t('revenue')}</span>
+                      <span className="font-mono text-lg">{formatCurrency(incomeStatement?.totalRevenue || 0)}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-amber-500 text-[10px] uppercase tracking-widest font-bold mb-3">{t('expense')}</h4>
+                    {incomeStatement?.expenses.map((e: any) => (
+                      <div key={e.code} className="flex justify-between py-3 border-b border-white/5">
+                        <span className="text-slate-400 text-sm">{e.name}</span>
+                        <span className="text-rose-500 font-mono">({formatCurrency(e.balance)})</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between py-4 font-bold text-white border-b-2 border-slate-800">
+                      <span className="text-xs uppercase tracking-widest">{t('total')} {t('expense')}</span>
+                      <span className="font-mono text-lg">{formatCurrency(incomeStatement?.totalExpenses || 0)}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-500/10 p-6 flex justify-between items-center">
+                    <span className="text-amber-500 font-black uppercase tracking-tighter text-2xl">{t('profit_loss')} (NET)</span>
+                    <span className="text-amber-500 font-black font-mono text-3xl">{formatCurrency(incomeStatement?.netIncome || 0)}</span>
+                  </div>
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* CASH FLOW VISUALIZER */}
+          <Card className="bg-slate-950/40 border-slate-800 rounded-none relative overflow-hidden group md:col-span-2">
+            <CardHeader className="p-8 border-b border-slate-800/50">
+              <CardTitle className="text-2xl font-light text-white">Cash Flow {t('reports')}</CardTitle>
+              <CardDescription className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Liquidity & Movement Analytics</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div>
+                  <h4 className="text-emerald-500 text-[10px] uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-3 w-3" /> {t('inflow')}
+                  </h4>
+                  <div className="space-y-4">
+                    {cashFlow?.inflows.map((flow: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-slate-900/30 border border-slate-800/50">
+                        <span className="text-xs text-slate-400 italic truncate max-w-[200px]">{flow.desc}</span>
+                        <span className="text-emerald-500 font-mono text-sm">{formatCurrency(flow.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-rose-500 text-[10px] uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+                    <TrendingDown className="h-3 w-3" /> {t('outflow')}
+                  </h4>
+                  <div className="space-y-4">
+                    {cashFlow?.outflows.map((flow: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-slate-900/30 border border-slate-800/50">
+                        <span className="text-xs text-slate-400 italic truncate max-w-[200px]">{flow.desc}</span>
+                        <span className="text-rose-500 font-mono text-sm">({formatCurrency(flow.amount)})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-10 pt-8 border-t border-slate-800/50 flex justify-end">
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-widest font-black text-slate-600 mb-1">Net Cash Movement</p>
+                  <p className={cn(
+                    "text-4xl font-light font-mono italic",
+                    cashFlow?.totalNet >= 0 ? "text-emerald-500" : "text-rose-500"
+                  )}>{formatCurrency(cashFlow?.totalNet || 0)}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
